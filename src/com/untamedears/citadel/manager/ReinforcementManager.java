@@ -5,8 +5,8 @@ import java.util.Set;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 
-import com.untamedears.citadel.ReinforcementStorage;
 import com.untamedears.citadel.entity.IReinforcement;
+import com.untamedears.citadel.storage.ReinforcementStorage;
 
 /**
  * User: JonnyD

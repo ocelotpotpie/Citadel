@@ -6,8 +6,8 @@ import java.util.Map;
 
 import org.bukkit.entity.Player;
 
-import com.untamedears.citadel.MemberStorage;
 import com.untamedears.citadel.entity.Member;
+import com.untamedears.citadel.storage.MemberStorage;
 
 /**
  * User: JonnyD

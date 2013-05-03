@@ -1,7 +1,7 @@
 package com.untamedears.citadel.manager;
 
-import com.untamedears.citadel.PersonalGroupStorage;
 import com.untamedears.citadel.entity.PersonalGroup;
+import com.untamedears.citadel.storage.PersonalGroupStorage;
 
 /**
  * User: JonnyD

@@ -2,10 +2,10 @@ package com.untamedears.citadel.manager;
 
 import java.util.Set;
 
-import com.untamedears.citadel.GroupStorage;
 import com.untamedears.citadel.entity.Faction;
 import com.untamedears.citadel.entity.FactionMember;
 import com.untamedears.citadel.entity.Moderator;
+import com.untamedears.citadel.storage.GroupStorage;
 
 /**
  * User: JonnyD
