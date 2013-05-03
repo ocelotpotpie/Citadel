@@ -3,9 +3,9 @@ package com.untamedears.citadel.command.commands;
 import org.bukkit.command.CommandSender;
 
 import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.GroupManager;
-import com.untamedears.citadel.ReinforcementManager;
 import com.untamedears.citadel.command.PlayerCommand;
+import com.untamedears.citadel.manager.GroupManager;
+import com.untamedears.citadel.manager.ReinforcementManager;
 
 /**
  * User: JonnyD

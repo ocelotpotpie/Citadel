@@ -34,6 +34,11 @@ import com.untamedears.citadel.listener.ChunkListener;
 import com.untamedears.citadel.listener.EntityListener;
 import com.untamedears.citadel.listener.PlayerListener;
 import com.untamedears.citadel.listener.WorldListener;
+import com.untamedears.citadel.manager.ConfigManager;
+import com.untamedears.citadel.manager.GroupManager;
+import com.untamedears.citadel.manager.MemberManager;
+import com.untamedears.citadel.manager.PersonalGroupManager;
+import com.untamedears.citadel.manager.ReinforcementManager;
 
 /**
  * User: JonnyD

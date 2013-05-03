@@ -23,9 +23,6 @@ import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.material.Openable;
 
 import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.GroupManager;
-import com.untamedears.citadel.MemberManager;
-import com.untamedears.citadel.PersonalGroupManager;
 import com.untamedears.citadel.PlacementMode;
 import com.untamedears.citadel.SecurityLevel;
 import com.untamedears.citadel.access.AccessDelegate;
@@ -34,6 +31,9 @@ import com.untamedears.citadel.entity.Member;
 import com.untamedears.citadel.entity.PlayerState;
 import com.untamedears.citadel.entity.IReinforcement;
 import com.untamedears.citadel.entity.PlayerReinforcement;
+import com.untamedears.citadel.manager.GroupManager;
+import com.untamedears.citadel.manager.MemberManager;
+import com.untamedears.citadel.manager.PersonalGroupManager;
 
 /**
  * Created by IntelliJ IDEA.

@@ -9,10 +9,10 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.GroupManager;
 import com.untamedears.citadel.command.PlayerCommand;
 import com.untamedears.citadel.entity.Faction;
 import com.untamedears.citadel.entity.FactionMember;
+import com.untamedears.citadel.manager.GroupManager;
 
 /**
  * Created by IntelliJ IDEA.

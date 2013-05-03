@@ -7,14 +7,14 @@ import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 
 import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.GroupManager;
-import com.untamedears.citadel.MemberManager;
-import com.untamedears.citadel.ReinforcementManager;
 import com.untamedears.citadel.entity.Faction;
 import com.untamedears.citadel.entity.FactionMember;
 import com.untamedears.citadel.entity.IReinforcement;
 import com.untamedears.citadel.entity.Moderator;
 import com.untamedears.citadel.entity.PlayerReinforcement;
+import com.untamedears.citadel.manager.GroupManager;
+import com.untamedears.citadel.manager.MemberManager;
+import com.untamedears.citadel.manager.ReinforcementManager;
 
 public final class CommandUtils {
 	public static HashMap<Material,Integer> countReinforcements(String name) {

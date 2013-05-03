@@ -8,10 +8,10 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.ConfigManager;
 import com.untamedears.citadel.command.PlayerCommand;
 import com.untamedears.citadel.dao.CitadelDao;
 import com.untamedears.citadel.dao.CitadelCachingDao;
+import com.untamedears.citadel.manager.ConfigManager;
 
 public class ConsoleCommands extends PlayerCommand {
     public ConsoleCommands() {

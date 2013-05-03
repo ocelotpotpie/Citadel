@@ -9,13 +9,13 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.GroupManager;
 import com.untamedears.citadel.PlacementMode;
 import com.untamedears.citadel.SecurityLevel;
 import com.untamedears.citadel.command.PlayerCommand;
 import com.untamedears.citadel.entity.Faction;
 import com.untamedears.citadel.entity.PlayerState;
 import com.untamedears.citadel.entity.ReinforcementMaterial;
+import com.untamedears.citadel.manager.GroupManager;
 
 /**
  * User: JonnyD
