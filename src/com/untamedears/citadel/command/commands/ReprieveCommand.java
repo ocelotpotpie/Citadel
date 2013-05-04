@@ -7,9 +7,9 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.GroupManager;
 import com.untamedears.citadel.command.PlayerCommand;
 import com.untamedears.citadel.entity.Faction;
+import com.untamedears.citadel.manager.GroupManager;
 
 public class ReprieveCommand extends PlayerCommand {
 

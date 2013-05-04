@@ -5,13 +5,20 @@ import static com.untamedears.citadel.Utility.isReinforced;
 import static com.untamedears.citadel.Utility.reinforcementBroken;
 import static com.untamedears.citadel.Utility.sendMessage;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
+import org.bukkit.entity.Vehicle;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -20,12 +27,12 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
-import org.bukkit.material.Openable;
+import org.bukkit.event.vehicle.VehicleEnterEvent;
+import org.bukkit.event.vehicle.VehicleExitEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitScheduler;
 
 import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.GroupManager;
-import com.untamedears.citadel.MemberManager;
-import com.untamedears.citadel.PersonalGroupManager;
 import com.untamedears.citadel.PlacementMode;
 import com.untamedears.citadel.SecurityLevel;
 import com.untamedears.citadel.access.AccessDelegate;
@@ -34,6 +41,9 @@ import com.untamedears.citadel.entity.Member;
 import com.untamedears.citadel.entity.PlayerState;
 import com.untamedears.citadel.entity.IReinforcement;
 import com.untamedears.citadel.entity.PlayerReinforcement;
+import com.untamedears.citadel.manager.GroupManager;
+import com.untamedears.citadel.manager.MemberManager;
+import com.untamedears.citadel.manager.PersonalGroupManager;
 
 /**
  * Created by IntelliJ IDEA.
@@ -45,6 +55,9 @@ import com.untamedears.citadel.entity.PlayerReinforcement;
  * 7/18/12
  */
 public class PlayerListener implements Listener {
+
+	private BukkitScheduler scheduler = Citadel.getPlugin().getServer().getScheduler();
+	private Map<String, Integer> playersInMinecart = new HashMap<String, Integer>();
 
     @EventHandler
     public void login(PlayerLoginEvent ple) {
@@ -86,6 +99,7 @@ public class PlayerListener implements Listener {
         MemberManager memberManager = Citadel.getMemberManager();
         memberManager.removeOnlinePlayer(player);
         PlayerState.remove(player);
+    	cancelPlayerInMinecartTask(player.getDisplayName());
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -116,6 +130,8 @@ public class PlayerListener implements Listener {
     public void interact(PlayerInteractEvent pie) {
         try {
         if (!pie.hasBlock()) return;
+        
+        onMinecartInteract(pie);
 
         Player player = pie.getPlayer();
         Block block = pie.getClickedBlock();
@@ -252,5 +268,90 @@ public class PlayerListener implements Listener {
         {
             Citadel.printStackTrace(e);
         }
+    }
+    
+    private void onMinecartInteract(PlayerInteractEvent event) {
+    	if(!event.hasItem()) {
+    		return;
+    	}
+    	
+    	if(event.getMaterial() != Material.MINECART) {
+    		return;
+    	}
+    	
+    	Block block = event.getClickedBlock();
+    	Location location = block.getLocation();
+    	Player player = event.getPlayer();
+    	
+    	PlayerReinforcement reinforcement = (PlayerReinforcement) Citadel.getReinforcementManager().getReinforcement(location);    	
+		if(reinforcement != null 
+				&& !reinforcement.isAccessible(player)) {
+			event.setCancelled(true);
+			sendMessage(player, ChatColor.RED, "You don't have permission to use this rail");
+		}
+    }
+    
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onMinecartEnter(VehicleEnterEvent event) {
+    	Vehicle vehicle = event.getVehicle();
+    	if(!(vehicle instanceof Minecart)) {
+    		return;
+    	}
+    	
+    	Entity entity = event.getEntered();
+    	if(!(entity instanceof Player)) {
+    		return;
+    	}
+    	
+    	final Minecart minecart = (Minecart) vehicle;
+    	final World world = minecart.getWorld();
+    	final Player player = (Player) entity;
+    	final String username = player.getName();
+    	
+    	int delay = 20 * 2;
+    	int period = 20 * 2;
+    	int taskId = scheduler.scheduleSyncRepeatingTask(Citadel.getPlugin(), new Runnable() {
+    		public void run() {
+    			Location location = minecart.getLocation();
+    			PlayerReinforcement reinforcement = (PlayerReinforcement) Citadel.getReinforcementManager().getReinforcement(location);
+    			if(reinforcement != null 
+    					&& !reinforcement.isAccessible(username)) {
+	    			player.leaveVehicle();
+	    			minecart.remove();
+	    			world.dropItemNaturally(location, new ItemStack(Material.MINECART));
+	    			sendMessage(player, ChatColor.RED, "You don't have permission to use this rail");
+    			}
+    		}
+    	}, delay, period);
+    	this.playersInMinecart.put(username.toLowerCase(), taskId);
+    }
+    
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onMinecartExit(VehicleExitEvent event) {
+    	Vehicle vehicle = event.getVehicle();
+    	if(!(vehicle instanceof Minecart)) {
+    		return;
+    	}
+    	
+    	Entity entity = event.getExited();
+    	if(!(entity instanceof Player)) {
+    		return;
+    	}
+    	
+    	Player player = (Player) entity;
+    	String username = player.getName().toLowerCase();
+    	cancelPlayerInMinecartTask(username);
+    }
+    
+    private void cancelPlayerInMinecartTask(String username) {
+    	if(this.playersInMinecart.containsKey(username))
+		{
+			int taskId = this.playersInMinecart.get(username);
+			if(taskId > 0 && scheduler.isQueued(taskId))
+			{
+	            this.scheduler.cancelTask(taskId);
+	            this.playersInMinecart.remove(username);
+			}
+		}
     }
 }

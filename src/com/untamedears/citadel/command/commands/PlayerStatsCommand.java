@@ -5,11 +5,11 @@ import java.util.Set;
 import org.bukkit.command.CommandSender;
 
 import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.GroupManager;
 import com.untamedears.citadel.command.CommandUtils;
 import com.untamedears.citadel.command.PlayerCommand;
 import com.untamedears.citadel.entity.Faction;
 import com.untamedears.citadel.entity.Member;
+import com.untamedears.citadel.manager.GroupManager;
 
 public class PlayerStatsCommand extends PlayerCommand {
 

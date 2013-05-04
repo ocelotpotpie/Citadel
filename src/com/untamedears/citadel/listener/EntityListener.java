@@ -20,8 +20,8 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.world.StructureGrowEvent;
 
 import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.ReinforcementManager;
 import com.untamedears.citadel.entity.IReinforcement;
+import com.untamedears.citadel.manager.ReinforcementManager;
 
 /**
  * Created by IntelliJ IDEA.

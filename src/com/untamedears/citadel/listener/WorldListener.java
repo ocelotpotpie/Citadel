@@ -6,7 +6,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.world.StructureGrowEvent;
 
 import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.ReinforcementManager;
+import com.untamedears.citadel.manager.ReinforcementManager;
 
 public class WorldListener implements Listener {
   @EventHandler(ignoreCancelled = true)
