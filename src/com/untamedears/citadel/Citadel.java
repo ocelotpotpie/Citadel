@@ -68,7 +68,6 @@ public class Citadel extends JavaPlugin {
     public void onEnable() {
         plugin = this;
         saveDefaultConfig();
-        configManager.load();
         dao = new CitadelCachingDao(this);
         dao.updateDatabase();
         setUpStorage();

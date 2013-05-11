@@ -49,10 +49,7 @@ public class ConsoleCommands extends PlayerCommand {
         }
         String settingName = args[1];
         ConfigManager cm = Citadel.getConfigManager();
-        if (settingName.equalsIgnoreCase("flashLength")) {
-            sendMessage(sender, ChatColor.YELLOW, "flashLength == " + cm.getFlashLength());
-
-        } else if (settingName.equalsIgnoreCase("autoModeReset")) {
+        if (settingName.equalsIgnoreCase("autoModeReset")) {
             sendMessage(sender, ChatColor.YELLOW, "autoModeReset == " + cm.getAutoModeReset());
 
         } else if (settingName.equalsIgnoreCase("verboseLogging")) {
@@ -86,10 +83,7 @@ public class ConsoleCommands extends PlayerCommand {
         String value = args[2];
         ConfigManager cm = Citadel.getConfigManager();
         try {
-            if (settingName.equalsIgnoreCase("flashLength")) {
-                cm.setFlashLength(Integer.parseInt(value));
-
-            } else if (settingName.equalsIgnoreCase("autoModeReset")) {
+            if (settingName.equalsIgnoreCase("autoModeReset")) {
                 cm.setAutoModeReset(Integer.parseInt(value));
 
             } else if (settingName.equalsIgnoreCase("verboseLogging")) {
