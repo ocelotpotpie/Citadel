@@ -34,7 +34,6 @@ public class ReinforcementMaterial implements Comparable<ReinforcementMaterial> 
     private int materialId;
     private int strength;
     private int requirements;
-    private int flasherMaterialId;
     
     public ReinforcementMaterial(LinkedHashMap map) {
         // Materials may be specified by name or by integer value
@@ -54,28 +53,12 @@ public class ReinforcementMaterial implements Comparable<ReinforcementMaterial> 
         
         strength = (Integer) map.get("strength");
         requirements = (Integer) map.get("requirements");
-        
-        
-        material = Material.matchMaterial(map.get("flasher").toString());
-        if (material != null) {
-        	if(!material.isBlock()) {
-        		throw new IllegalArgumentException("Supplied flasher value is a non-block material.");
-        	}
-        	flasherMaterialId = material.getId();
-        } else {
-        	try {
-        		flasherMaterialId = Integer.parseInt((map.get("flasher").toString()));
-        	} catch(NumberFormatException e) {
-        		throw new IllegalArgumentException("Invalid flasher material.");
-        	}
-    	}
     }
 
-    public ReinforcementMaterial(int materialId, int strength, int requirements, int flasherMaterialId) {
+    public ReinforcementMaterial(int materialId, int strength, int requirements) {
         this.materialId = materialId;
         this.strength = strength;
         this.requirements = requirements;
-        this.flasherMaterialId = flasherMaterialId;
     }
 
     public Material getMaterial() {
