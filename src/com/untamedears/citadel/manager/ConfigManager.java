@@ -1,10 +1,18 @@
 package com.untamedears.citadel.manager;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 
 import com.untamedears.citadel.Citadel;
 import com.untamedears.citadel.NaturalReinforcementConfig;
@@ -12,36 +20,90 @@ import com.untamedears.citadel.entity.NaturalReinforcement;
 import com.untamedears.citadel.entity.PlayerReinforcement;
 import com.untamedears.citadel.entity.ReinforcementMaterial;
 
-/**
- * User: JonnyD
- * Date: 07/18/12
- * Time: 11:57 PM
- */
 public class ConfigManager {
 	
-	private int flashLength;
+	private String driver;
+	private String url;
+	private String username;
+	private String password;
+	private String isolation;
+	private boolean logging;
+	private boolean rebuild;
+	
 	private int autoModeReset;
 	private boolean verboseLogging;
 	private double redstoneDistance;
 	private int groupsAllowed;
 	private long cacheMaxAge;
 	private int cacheMaxChunks;
+	
+	private Map<String, ReinforcementMaterial> reinforcementMaterials;
 
-	public void load(){
-		Citadel.getPlugin().reloadConfig();
-		FileConfiguration config = Citadel.getPlugin().getConfig();
-		config.options().copyDefaults(true);
-        flashLength = config.getInt("general.flashLength");
-        autoModeReset = config.getInt("general.autoModeReset");
-        verboseLogging = config.getBoolean("general.verboseLogging");
-        redstoneDistance = config.getDouble("general.redstoneDistance");
-        groupsAllowed = config.getInt("general.groupsAllowed");
-        cacheMaxAge = config.getLong("caching.max_age");
-        cacheMaxChunks = config.getInt("caching.max_chunks");
-        for (Object obj : config.getList("materials")) {
-            LinkedHashMap map = (LinkedHashMap) obj;
-            ReinforcementMaterial.put(new ReinforcementMaterial(map));
+	private File main;
+	private FileConfiguration config;
+	private FileConfiguration cleanConfig;
+	
+	public ConfigManager() {
+		this.reinforcementMaterials = new HashMap<String, ReinforcementMaterial>();
+		Citadel plugin = Citadel.getPlugin();
+		this.config = plugin.getConfig();
+		this.cleanConfig = new YamlConfiguration();
+		this.main = new File(plugin.getDataFolder() + File.separator + "config.yml");
+		this.load();
+	}
+	
+	private void load() {
+		boolean exists = main.exists();
+		
+		if(exists) {
+			try {
+				config.options().copyDefaults();
+				config.load(main);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		} else {
+			config.options().copyDefaults(true);
+		}
+		
+		driver = loadString("database.driver");
+		url = loadString("database.url");
+		username = loadString("database.username");
+		password = loadString("database.password");
+		isolation = loadString("database.isolation");
+		logging = loadBoolean("database.logging");
+		rebuild = loadBoolean("database.rebuild");
+		
+        autoModeReset = loadInt("general.autoModeReset");
+        verboseLogging = loadBoolean("general.verboseLogging");
+        redstoneDistance = loadDouble("general.redstoneDistance");
+        groupsAllowed = loadInt("general.groupsAllowed");
+        cacheMaxAge = loadLong("caching.max_age");
+        cacheMaxChunks = loadInt("caching.max_chunks");
+        
+        for (Object object : loadList("materials")) {
+        	LinkedHashMap<?,?> map = (LinkedHashMap<?,?>) object;
+        	
+        	String name = map.get("name").toString();
+        	int strength = (Integer) map.get("strength");
+        	int requirements = (Integer) map.get("requirements");
+        	
+        	int materialId;
+        	Material material = Material.matchMaterial(name);
+            if (material != null) {
+            	materialId = material.getId();
+            } else {
+            	try {
+            		materialId = Integer.parseInt(name);
+            	} catch(NumberFormatException e) {
+            		throw new IllegalArgumentException("Invalid reinforcement material");
+            	}
+        	}
+        	
+        	ReinforcementMaterial reinforcementMaterial = new ReinforcementMaterial(materialId, strength, requirements);
+        	this.reinforcementMaterials.put(material.name().toString(), reinforcementMaterial);
         }
+        
         for (String name : config.getStringList("additionalSecurable")) {
             Material material = Material.matchMaterial(name);
             if (material != null) {
@@ -82,6 +144,79 @@ public class ConfigManager {
         }
 	}
 	
+
+	private Boolean loadBoolean(String path) {
+        if (config.isBoolean(path)) {
+            boolean value = config.getBoolean(path);
+            cleanConfig.set(path, value);
+            return value;
+        }
+        return false;
+    }
+
+    private String loadString(String path) {
+        if (config.isString(path)) {
+            String value = config.getString(path);
+            cleanConfig.set(path, value);
+            return value;
+        }
+
+        return "";
+    }
+
+    private int loadInt(String path) {
+        if (config.isInt(path)) {
+            int value = config.getInt(path);
+            cleanConfig.set(path, value);
+            return value;
+        }
+
+        return 0;
+    }
+    
+    private Long loadLong(String path) {
+    	if (config.isLong(path)) {
+    		long value = config.getLong(path);
+    		cleanConfig.set(path, value);
+    	}
+    	return 0L;
+    }
+
+    private double loadDouble(String path) {
+        if (config.isDouble(path)) {
+            double value = config.getDouble(path);
+            cleanConfig.set(path, value);
+            return value;
+        }
+        return 0;
+    }
+    
+    private List<String> loadStringList(String path) {
+    	if(config.isList(path)) {
+    		List<String> value = config.getStringList(path);
+    		cleanConfig.set(path, value);
+    		return value;
+    	}
+    	return null;
+    }
+    
+    private List<?> loadList(String path) {
+    	if(config.isList(path)) {
+    		List<?> value = config.getList(path);
+    		cleanConfig.set(path, value);
+    		return value;
+    	}
+    	return null;
+    }
+    
+    public void save() {
+        try {
+            cleanConfig.save(main);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+	
 	public double getRedstoneDistance(){
 		return this.redstoneDistance;
 	}
@@ -98,15 +233,7 @@ public class ConfigManager {
 		this.autoModeReset = amr;
 	}
 	
-	public int getFlashLength(){
-		return this.flashLength;
-	}
-	
-	public void setFlashLength(int fl){
-		this.flashLength = fl;
-	}
-	
-	public int getGroupsAllowed(){
+	public int getGroupsAllowed() {
 		return this.groupsAllowed;
 	}
 	
@@ -122,6 +249,79 @@ public class ConfigManager {
 		this.verboseLogging = vl;
 	}
 	
+	public String getDriver() {
+		return driver;
+	}
+
+	public void setDriver(String driver) {
+		this.driver = driver;
+	}
+
+	public String getUrl() {
+		return url;
+	}
+
+	public void setUrl(String url) {
+		this.url = url;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	public String getIsolation() {
+		return isolation;
+	}
+
+	public void setIsolation(String isolation) {
+		this.isolation = isolation;
+	}
+
+	public boolean isLogging() {
+		return logging;
+	}
+
+	public void setLogging(boolean logging) {
+		this.logging = logging;
+	}
+
+	public boolean isRebuild() {
+		return rebuild;
+	}
+
+	public void setRebuild(boolean rebuild) {
+		this.rebuild = rebuild;
+	}
+
+	public Map<String, ReinforcementMaterial> getReinforcementMaterials() {
+		return reinforcementMaterials;
+	}
+
+	public void setReinforcementMaterials(
+			Map<String, ReinforcementMaterial> reinforcementMaterials) {
+		this.reinforcementMaterials = reinforcementMaterials;
+	}
+
+	public File getMain() {
+		return main;
+	}
+
+	public void setMain(File main) {
+		this.main = main;
+	}
+
 	public long getCacheMaxAge(){
 		return this.cacheMaxAge;
 	}

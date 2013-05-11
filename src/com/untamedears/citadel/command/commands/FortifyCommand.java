@@ -16,6 +16,7 @@ import com.untamedears.citadel.entity.Faction;
 import com.untamedears.citadel.entity.PlayerState;
 import com.untamedears.citadel.entity.ReinforcementMaterial;
 import com.untamedears.citadel.manager.GroupManager;
+import com.untamedears.citadel.manager.ReinforcementManager;
 
 /**
  * User: JonnyD
@@ -35,7 +36,7 @@ public class FortifyCommand extends PlayerCommand {
 	public boolean execute(CommandSender sender, String[] args) {
 		Player player = (Player) sender;
 		PlayerState state = PlayerState.get(player);
-		
+
 		String secLevel = null;
 		String groupName = null;
 		if(args.length != 0){
@@ -44,26 +45,26 @@ public class FortifyCommand extends PlayerCommand {
 				groupName = args[1];
 			}
 		}
-                
-                SecurityLevel securityLevel = getSecurityLevel(args, player);
-                if ((secLevel == null || secLevel.isEmpty()) && state.getMode() == PlacementMode.FORTIFICATION) {
-                    securityLevel = state.getSecurityLevel();
-                }
-                if (securityLevel == null) return false;
-		
+
+		SecurityLevel securityLevel = getSecurityLevel(args, player);
+		if ((secLevel == null || secLevel.isEmpty()) && state.getMode() == PlacementMode.FORTIFICATION) {
+			securityLevel = state.getSecurityLevel();
+		}
+		if (securityLevel == null) return false;
+
 		if(securityLevel == SecurityLevel.GROUP){
-                        Faction group;
-                        if(!(groupName == null) && !(groupName.isEmpty()) && !(groupName.equals(""))){
-                            GroupManager groupManager = Citadel.getGroupManager();
-                            group = groupManager.getGroup(groupName);
-                        } else if (state.getMode() == PlacementMode.FORTIFICATION && state.getSecurityLevel() == SecurityLevel.GROUP) {
-                            /* Default to current faction */
-                            group = state.getFaction();
-                        } else {
-                            sender.sendMessage(new StringBuilder().append("§cYou must specify a group in group fortification mode").toString());
-                            sender.sendMessage(new StringBuilder().append("§cUsage:§e ").append("/ctfortify §8group <group-name>").toString());
-                            return true;
-                        }
+			Faction group;
+			if(!(groupName == null) && !(groupName.isEmpty()) && !(groupName.equals(""))){
+				GroupManager groupManager = Citadel.getGroupManager();
+				group = groupManager.getGroup(groupName);
+			} else if (state.getMode() == PlacementMode.FORTIFICATION && state.getSecurityLevel() == SecurityLevel.GROUP) {
+				/* Default to current faction */
+				group = state.getFaction();
+			} else {
+				sender.sendMessage(new StringBuilder().append("§cYou must specify a group in group fortification mode").toString());
+				sender.sendMessage(new StringBuilder().append("§cUsage:§e ").append("/ctfortify §8group <group-name>").toString());
+				return true;
+			}
 			if(group == null){
 				sendMessage(sender, ChatColor.RED, "Group doesn't exist");
 				return true;
@@ -86,25 +87,26 @@ public class FortifyCommand extends PlayerCommand {
 			state.setFaction(Citadel.getMemberManager().getMember(player).getPersonalGroup());
 		}
 
-        ReinforcementMaterial material = ReinforcementMaterial.get(player.getItemInHand().getType());
-        if (state.getMode() == PlacementMode.FORTIFICATION) {
-            // Only change material if a valid reinforcement material in hand and not current reinforcement
-            if (material != null && material != state.getReinforcementMaterial()) {
-                // Switch reinforcement materials without turning off and on again
-                state.reset();
-                state.setFortificationMaterial(material);
-            }
-            setMultiMode(PlacementMode.FORTIFICATION, securityLevel, args, player, state);
-        } else {
-            if (material == null) {
-                sendMessage(sender, ChatColor.YELLOW, "Invalid reinforcement material %s", player.getItemInHand().getType().name());
-            } else {
-                state.setFortificationMaterial(material);
-                setMultiMode(PlacementMode.FORTIFICATION, securityLevel, args, player, state);
-            }
-        }
-        
-        return true;
+		ReinforcementManager reinforcementManager = Citadel.getReinforcementManager();
+		ReinforcementMaterial material = reinforcementManager.getReinforcementMaterial(player.getItemInHand().getType());
+		if (state.getMode() == PlacementMode.FORTIFICATION) {
+			// Only change material if a valid reinforcement material in hand and not current reinforcement
+			if (material != null && material != state.getReinforcementMaterial()) {
+				// Switch reinforcement materials without turning off and on again
+				state.reset();
+				state.setFortificationMaterial(material);
+			}
+			setMultiMode(PlacementMode.FORTIFICATION, securityLevel, args, player, state);
+		} else {
+			if (material == null) {
+				sendMessage(sender, ChatColor.YELLOW, "Invalid reinforcement material %s", player.getItemInHand().getType().name());
+			} else {
+				state.setFortificationMaterial(material);
+				setMultiMode(PlacementMode.FORTIFICATION, securityLevel, args, player, state);
+			}
+		}
+
+		return true;
 	}
 
 }
