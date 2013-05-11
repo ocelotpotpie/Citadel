@@ -1,8 +1,10 @@
 package com.untamedears.citadel.manager;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 
 import com.untamedears.citadel.entity.IReinforcement;
@@ -16,8 +18,11 @@ import com.untamedears.citadel.storage.ReinforcementStorage;
 public class ReinforcementManager {
 	
 	private ReinforcementStorage storage;
-
-	public ReinforcementManager(){}
+	private Set<Material> reinforcementMaterial;
+	
+	public ReinforcementManager() {
+		this.reinforcementMaterial = new HashSet<Material>();
+	}
 	
 	public ReinforcementStorage getStorage(){
 		return this.storage;
