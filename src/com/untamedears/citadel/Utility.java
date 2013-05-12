@@ -29,6 +29,7 @@ import com.untamedears.citadel.entity.NaturalReinforcement;
 import com.untamedears.citadel.entity.PlayerReinforcement;
 import com.untamedears.citadel.entity.ReinforcementKey;
 import com.untamedears.citadel.entity.ReinforcementMaterial;
+import com.untamedears.citadel.manager.ReinforcementManager;
 
 /**
  * Created by IntelliJ IDEA.
@@ -87,7 +88,8 @@ public class Utility {
             case REINFORCEMENT:
             case REINFORCEMENT_SINGLE_BLOCK:
                 Material inHand = player.getItemInHand().getType();
-                material = ReinforcementMaterial.get(inHand);
+                ReinforcementManager rm = Citadel.getReinforcementManager();
+                material = rm.getReinforcementMaterial(inHand);
                 if (material == null) {
                     sendMessage(player, ChatColor.RED, "Material in hand %s is not a valid reinforcement material.", inHand.name());
                     state.reset();

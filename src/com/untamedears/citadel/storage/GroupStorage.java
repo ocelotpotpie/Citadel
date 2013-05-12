@@ -8,11 +8,6 @@ import com.untamedears.citadel.entity.Faction;
 import com.untamedears.citadel.entity.FactionMember;
 import com.untamedears.citadel.entity.Moderator;
 
-/**
- * User: JonnyD
- * Date: 07/18/12
- * Time: 11:57 PM
- */
 public class GroupStorage {
 	
 	private CitadelDao dao;
@@ -55,6 +50,10 @@ public class GroupStorage {
 	
 	public Set<Faction> findGroupsByFounder(String founderName){
 		return this.dao.findGroupsByFounder(founderName);
+	}
+	
+	public Set<Faction> findAllGroups() {
+		return this.dao.findAllGroups();
 	}
 	
 	public Set<Faction> findGroupsByMember(String memberName){

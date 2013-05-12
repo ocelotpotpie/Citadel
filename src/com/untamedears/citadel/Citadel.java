@@ -32,6 +32,7 @@ import com.untamedears.citadel.entity.ReinforcementKey;
 import com.untamedears.citadel.listener.BlockListener;
 import com.untamedears.citadel.listener.ChunkListener;
 import com.untamedears.citadel.listener.EntityListener;
+import com.untamedears.citadel.listener.GroupsListener;
 import com.untamedears.citadel.listener.PlayerListener;
 import com.untamedears.citadel.listener.WorldListener;
 import com.untamedears.citadel.manager.ConfigManager;
@@ -52,11 +53,11 @@ import com.untamedears.citadel.storage.ReinforcementStorage;
 public class Citadel extends JavaPlugin {
     private static final Logger log = Logger.getLogger("Citadel");
     private static final CommandHandler commandHandler = new CommandHandler();
+    private static final ConfigManager configManager = new ConfigManager();
     private static final ReinforcementManager reinforcementManager = new ReinforcementManager();
     private static final GroupManager groupManager = new GroupManager();
     private static final PersonalGroupManager personalGroupManager = new PersonalGroupManager();
     private static final MemberManager memberManager = new MemberManager();
-    private static final ConfigManager configManager = new ConfigManager();
     private static final Random randomGenerator = new Random();
     private static CitadelCachingDao dao;
     private static Citadel plugin;
@@ -67,7 +68,7 @@ public class Citadel extends JavaPlugin {
 
     public void onEnable() {
         plugin = this;
-        saveDefaultConfig();
+        configManager.load();
         dao = new CitadelCachingDao(this);
         dao.updateDatabase();
         setUpStorage();
@@ -121,6 +122,7 @@ public class Citadel extends JavaPlugin {
             pm.registerEvents(new PlayerListener(), this);
             pm.registerEvents(new EntityListener(), this);
             pm.registerEvents(new WorldListener(), this);
+            pm.registerEvents(new GroupsListener(), this);
         }
         catch(Exception e)
         {

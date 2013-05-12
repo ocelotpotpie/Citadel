@@ -3,21 +3,19 @@ package com.untamedears.citadel.command.commands;
 import static com.untamedears.citadel.Utility.sendMessage;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
+import com.untamedears.citadel.Citadel;
 import com.untamedears.citadel.command.PlayerCommand;
 import com.untamedears.citadel.entity.ReinforcementMaterial;
+import com.untamedears.citadel.manager.ReinforcementManager;
 
-/**
- * Created by IntelliJ IDEA.
- * User: chrisrico
- * Date: 3/21/12
- * Time: 11:21 AM
- */
 public class MaterialsCommand extends PlayerCommand {
 
     public MaterialsCommand() {
@@ -28,10 +26,13 @@ public class MaterialsCommand extends PlayerCommand {
     }
 
 	public boolean execute(CommandSender sender, String[] args) {
-		if (ReinforcementMaterial.VALID.isEmpty()) {
+		ReinforcementManager reinforcementManager = Citadel.getReinforcementManager();
+		Map<String, ReinforcementMaterial> reinforcementMaterials = reinforcementManager.getReinforcementMaterials();
+		
+		if (reinforcementMaterials.isEmpty()) {
 	        sendMessage(sender, ChatColor.YELLOW, "No reinforcement materials available.");
 	    } else {
-	        List<ReinforcementMaterial> materials = new ArrayList<ReinforcementMaterial>(ReinforcementMaterial.VALID.values());
+	        List<ReinforcementMaterial> materials = new ArrayList<ReinforcementMaterial>(reinforcementMaterials.values());
 	        Collections.sort(materials);
 	        sendMessage(sender, ChatColor.GREEN, "Reinforcement materials:");
 	        for (ReinforcementMaterial m : materials)

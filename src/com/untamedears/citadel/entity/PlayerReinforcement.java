@@ -23,12 +23,10 @@ import org.bukkit.material.Openable;
 import com.untamedears.citadel.Citadel;
 import com.untamedears.citadel.DbUpdateAction;
 import com.untamedears.citadel.SecurityLevel;
+import com.untamedears.citadel.manager.ReinforcementManager;
 
 import static com.untamedears.citadel.Utility.sendMessage;
 
-/**
- * User: chrisrico
- */
 @Table(name="reinforcement")
 @Entity
 public class PlayerReinforcement implements
@@ -107,7 +105,8 @@ public class PlayerReinforcement implements
     }
 
     public ReinforcementMaterial getMaterial() {
-        return ReinforcementMaterial.get(Material.getMaterial(materialId));
+    	ReinforcementManager reinforcementManager = Citadel.getReinforcementManager();
+        return reinforcementManager.getReinforcementMaterial(Material.getMaterial(materialId));
     }
 
     public int getMaterialId() {

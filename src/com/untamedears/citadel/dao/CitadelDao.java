@@ -21,6 +21,7 @@ import com.avaje.ebean.SqlUpdate;
 import com.avaje.ebean.config.DataSourceConfig;
 import com.avaje.ebean.config.ServerConfig;
 import com.lennardf1989.bukkitex.MyDatabase;
+import com.untamedears.citadel.Citadel;
 import com.untamedears.citadel.DbUpdateAction;
 import com.untamedears.citadel.entity.Faction;
 import com.untamedears.citadel.entity.FactionMember;
@@ -116,7 +117,7 @@ public class CitadelDao extends MyDatabase {
     }
 
 	public Set<Faction> findAllGroups() {
-		return getDatabase().createQuery(Faction.class, "find factionMember")
+		return getDatabase().createQuery(Faction.class, "find faction")
 				.findSet();
 	}
 	
@@ -286,6 +287,11 @@ public class CitadelDao extends MyDatabase {
 				.setParameter("groupName", groupName);
 		getDatabase().execute(update);
 	}
+	
+	public void executeUpdateQuery(String query) {
+		SqlUpdate updateQuery = getDatabase().createSqlUpdate(query);
+		getDatabase().execute(updateQuery);
+	}
 
 	public void updateDatabase(){
 		//this for when Citadel 2.0 is loaded after an older version of Citadel was previously installed
@@ -344,7 +350,248 @@ public class CitadelDao extends MyDatabase {
         } catch(PersistenceException e){
            	//column already exists
         }
+        
+        if(Citadel.getPlugin().getServer().getPluginManager().isPluginEnabled("Groups")) {
+        	updateGroups();
+        }
     }
+	
+	public void updateGroups() {
+		
+		List<SqlRow> oldGroups = getDatabase().createSqlQuery(
+				"SELECT * FROM faction WHERE CHAR_LENGTH(name) > 16")
+				.findList();
+		
+		for(SqlRow row : oldGroups) {
+			
+			String name = row.getString("name");
+			
+			if(name.length() > 16) {
+				int digit = 2;
+				String truncatedName = name.substring(0, 14);
+				String tempName = truncatedName.concat(String.valueOf(digit));
+				
+				boolean duplicate = true;
+				while(duplicate) {
+					SqlRow findGroup = getDatabase().createSqlQuery("SELECT * FROM faction WHERE name = :name")
+							.setParameter("name", tempName)
+							.findUnique();
+					
+					if(findGroup != null) {
+						digit++;
+						tempName = truncatedName.concat(String.valueOf(digit));
+					} else {
+						duplicate = false;
+						
+						SqlUpdate updateGroup = getDatabase().createSqlUpdate(
+								"Update faction set name = :newName WHERE name = :oldName")
+								.setParameter("newName", tempName)
+								.setParameter("oldName", name);
+						getDatabase().execute(updateGroup);
+						
+						break;
+					}
+					
+					
+				}
+			}
+		}
+
+		List<SqlRow> groups = getDatabase().createSqlQuery(
+				"SELECT * FROM faction")
+				.findList();
+
+		for(SqlRow row : groups) {
+
+			String name = row.getString("name");
+			int type = 0;
+			String password = row.getString("password");
+			int isPersonalGroup = 0;
+			String owner = row.getString("founder");
+			
+			if(name.length() > 16) {
+				
+			}
+
+			SqlRow personalGroupRow = getDatabase().createSqlQuery(
+					"SELECT * FROM personal_group WHERE group_name = :name")
+					.setParameter("name", name)
+					.findUnique();
+
+			if(personalGroupRow != null) {
+				isPersonalGroup = 1;
+			}
+			
+			SqlRow findGroup = getDatabase().createSqlQuery(
+					"SELECT * FROM groups_group WHERE name = :name")
+					.setParameter("name", name)
+					.findUnique();
+			
+			int groupId;
+			if(findGroup == null) {
+				SqlUpdate insertGroup = getDatabase().createSqlUpdate(
+						"INSERT INTO groups_group (name, personal, type, password, update_time, create_time)" +
+						"VALUES (:name, :personal, :type, :password, now(), now())")
+						.setParameter("name", name)
+						.setParameter("personal", isPersonalGroup)
+						.setParameter("type", type)
+						.setParameter("password", password);
+				getDatabase().execute(insertGroup);
+
+				SqlRow insertedGroup = getDatabase().createSqlQuery(
+						"SELECT * FROM groups_group WHERE name = :name")
+						.setParameter("name", name)
+						.findUnique();
+				
+				groupId = insertedGroup.getInteger("id");
+			} else {
+				groupId = findGroup.getInteger("id");
+			}
+			
+			SqlRow findOwner = getDatabase().createSqlQuery(
+					"SELECT * FROM groups_member WHERE name = :name")
+					.setParameter("name", owner)
+					.findUnique();
+			
+			int ownerId;
+			if(findOwner == null) {
+				SqlUpdate insertOwner = getDatabase().createSqlUpdate(
+						"INSERT INTO groups_member (name, update_time, create_time) VALUES (:name, now(), now())")
+						.setParameter("name", owner);
+				getDatabase().execute(insertOwner);
+				
+				SqlRow insertedOwner = getDatabase().createSqlQuery(
+						"SELECT * FROM groups_member WHERE name = :owner")
+						.setParameter("name", owner)
+						.findUnique();
+				
+				ownerId = insertedOwner.getInteger("id");
+			} else {
+				ownerId = findOwner.getInteger("id");
+			}
+			
+			SqlRow findOwnerGroupMember = getDatabase().createSqlQuery(
+					"SELECT * FROM groups_group_member WHERE group_id = :groupId AND member_id = :memberId")
+					.setParameter("groupId", groupId)
+					.setParameter("memberId", ownerId)
+					.findUnique();
+
+			if(findOwnerGroupMember == null) {
+				SqlUpdate groupMember = getDatabase().createSqlUpdate(
+						"INSERT INTO groups_group_member (group_id, member_id, role, update_time, create_time) " +
+						"VALUES (:groupId, :memberId, 0, now(), now())")
+						.setParameter("groupId", groupId)
+						.setParameter("memberId", ownerId);
+				getDatabase().execute(groupMember);
+			}
+
+			List<SqlRow> members = getDatabase().createSqlQuery(
+					"SELECT * FROM faction_member WHERE faction_name = :name")
+					.setParameter("name", name)
+					.findList();
+
+			for(SqlRow memberRow : members) {
+
+				String memberName = memberRow.getString("member_name");
+				if(memberName.length() > 16) {
+					continue;
+				}
+				SqlRow member = getDatabase().createSqlQuery(
+						"SELECT * FROM member WHERE member_name = :member")
+						.setParameter("member", memberName)
+						.findUnique();
+
+				SqlRow findMember = getDatabase().createSqlQuery(
+						"SELECT * FROM groups_member WHERE name = :name")
+						.setParameter("name", memberName)
+						.findUnique();
+				
+				int memberId;
+				if(findMember == null) {
+					SqlUpdate insertMember = getDatabase().createSqlUpdate(
+							"INSERT INTO groups_member (name, update_time, create_time) VALUES (:name, now(), now())")
+							.setParameter("name", memberName);
+					getDatabase().execute(insertMember);
+
+					SqlRow updatedMember = getDatabase().createSqlQuery(
+							"SELECT * FROM groups_member WHERE name = :name")
+							.setParameter("name", memberName)
+							.findUnique();
+					memberId = updatedMember.getInteger("id");
+				} else {
+					memberId = findMember.getInteger("id");
+				}
+				
+				SqlRow findGroupMember = getDatabase().createSqlQuery(
+						"SELECT * FROM groups_group_member WHERE group_id = :groupId AND member_id = :memberId")
+						.setParameter("groupId", groupId)
+						.setParameter("memberId", memberId)
+						.findUnique();
+
+				if(findGroupMember == null) {
+					SqlUpdate groupMember = getDatabase().createSqlUpdate(
+							"INSERT INTO groups_group_member (group_id, member_id, role, update_time, create_time) " +
+							"VALUES (:groupId, :memberId, 2, now(), now())")
+							.setParameter("groupId", groupId)
+							.setParameter("memberId", memberId);
+					getDatabase().execute(groupMember);
+				}
+			}
+			
+			List<SqlRow> moderators = getDatabase().createSqlQuery(
+					"SELECT * FROM moderator WHERE faction_name = :name")
+					.setParameter("name", name)
+					.findList();
+			
+			for(SqlRow moderatorRow : moderators) {
+				String moderatorName = moderatorRow.getString("member_name");
+				if(moderatorName.length() > 16) {
+					continue;
+				}
+				SqlRow moderator = getDatabase().createSqlQuery(
+						"SELECT * FROM member WHERE member_name = :member")
+						.setParameter("member", moderatorName)
+						.findUnique();
+
+				SqlRow findMember = getDatabase().createSqlQuery(
+						"SELECT * FROM groups_member WHERE name = :name")
+						.setParameter("name", moderatorName)
+						.findUnique();
+				
+				int memberId;
+				if(findMember == null) {
+					SqlUpdate insertMember = getDatabase().createSqlUpdate(
+							"INSERT INTO groups_member (name, update_time, create_time) " +
+							"VALUES (:name, now(), now())")
+							.setParameter("name", moderatorName);
+					getDatabase().execute(insertMember);
+
+					SqlRow updatedMember = getDatabase().createSqlQuery(
+							"SELECT * FROM groups_member WHERE name = :name")
+							.setParameter("name", moderatorName)
+							.findUnique();
+					memberId = updatedMember.getInteger("id");
+				} else {
+					memberId = findMember.getInteger("id");
+				}
+				
+				SqlRow findGroupMember = getDatabase().createSqlQuery(
+						"SELECT * FROM groups_group_member WHERE group_id = :groupId AND member_id = :memberId")
+						.setParameter("groupId", groupId)
+						.setParameter("memberId", memberId)
+						.findUnique();
+
+				if(findGroupMember == null) {
+					SqlUpdate groupMember = getDatabase().createSqlUpdate(
+							"INSERT INTO groups_group_member (group_id, member_id, role, update_time, create_time) " +
+							"VALUES (:groupId, :memberId, 1, now(), now())")
+							.setParameter("groupId", groupId)
+							.setParameter("memberId", memberId);
+					getDatabase().execute(groupMember);
+				}
+			}
+		}
+	}
 
     protected void prepareDatabaseAdditionalConfig(DataSourceConfig dataSourceConfig, ServerConfig serverConfig) {
         if (sqlEnableLog) {

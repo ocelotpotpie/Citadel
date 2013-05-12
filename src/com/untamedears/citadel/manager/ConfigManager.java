@@ -43,16 +43,13 @@ public class ConfigManager {
 	private FileConfiguration config;
 	private FileConfiguration cleanConfig;
 	
-	public ConfigManager() {
+	public void load() {
 		this.reinforcementMaterials = new HashMap<String, ReinforcementMaterial>();
 		Citadel plugin = Citadel.getPlugin();
 		this.config = plugin.getConfig();
 		this.cleanConfig = new YamlConfiguration();
 		this.main = new File(plugin.getDataFolder() + File.separator + "config.yml");
-		this.load();
-	}
-	
-	private void load() {
+		
 		boolean exists = main.exists();
 		
 		if(exists) {

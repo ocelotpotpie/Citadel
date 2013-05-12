@@ -7,11 +7,6 @@ import com.untamedears.citadel.entity.FactionMember;
 import com.untamedears.citadel.entity.Moderator;
 import com.untamedears.citadel.storage.GroupStorage;
 
-/**
- * User: JonnyD
- * Date: 07/18/12
- * Time: 11:57 PM
- */
 public class GroupManager {
 	private GroupStorage storage;
 
@@ -119,5 +114,9 @@ public class GroupManager {
 	
 	public int getPlayerGroupsAmount(String playerName){
 		return this.storage.findPlayerGroupsAmount(playerName);
+	}
+	
+	public Set<Faction> getAllGroups() {
+		return this.storage.findAllGroups();
 	}
 }
