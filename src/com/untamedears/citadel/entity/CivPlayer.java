@@ -18,7 +18,6 @@ public class CivPlayer {
     private PlacementMode mode;
     private ReinforcementMaterial fortificationMaterial;
     private SecurityLevel securityLevel;
-    private Faction faction;
     private boolean bypassMode;
     private long lastThrottledMessage;
     private Integer cancelModePid;
@@ -60,14 +59,6 @@ public class CivPlayer {
 
     public void setSecurityLevel(SecurityLevel securityLevel) {
         this.securityLevel = securityLevel;
-    }
-
-    public Faction getFaction() {
-        return faction;
-    }
-
-    public void setFaction(Faction faction) {
-        this.faction = faction;
     }
 
     public boolean isBypassMode() {
