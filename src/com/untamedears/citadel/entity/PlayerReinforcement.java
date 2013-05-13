@@ -5,6 +5,8 @@ import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -22,26 +24,37 @@ import org.bukkit.material.Openable;
 
 import com.untamedears.citadel.Citadel;
 import com.untamedears.citadel.DbUpdateAction;
-import com.untamedears.citadel.SecurityLevel;
 import com.untamedears.citadel.manager.ReinforcementManager;
 
 import static com.untamedears.citadel.Utility.sendMessage;
 
-@Table(name="reinforcement")
 @Entity
+@Table(name="reinforcement")
 public class PlayerReinforcement implements
         IReinforcement, Comparable<IReinforcement> {
+	
+	public enum SecurityLevel {
+		PUBLIC,
+		PRIVATE,
+		GROUP
+	}
 
     public static final List<Integer> SECURABLE = new ArrayList<Integer>();
     public static final List<Integer> NON_REINFORCEABLE = new ArrayList<Integer>();
 
-    @Id private ReinforcementKey id;
+    @Id 
+    private ReinforcementKey id;
     private int materialId;
     private int durability;
-    private SecurityLevel securityLevel;
+    
+    @Enumerated(value = EnumType.ORDINAL)
+	@Column(name = "security_level", nullable = false, length = 2)
+    private SecurityLevel securityLevel = SecurityLevel.PRIVATE;
+    
     private String chunkId;
-    // @Transient == not persisted in the DB
-    @Transient private DbUpdateAction dbAction;
+    
+    @Transient 
+    private DbUpdateAction dbAction;
 
     @Version
     @Column(name="version")
