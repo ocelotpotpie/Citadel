@@ -2,12 +2,12 @@ package com.untamedears.citadel.command;
 
 import org.bukkit.command.CommandSender;
 
-/**
- * User: JonnyD
- * Date: 07/18/12
- * Time: 11:57 PM
- */
+import com.untamedears.citadel.Citadel;
+import com.untamedears.citadel.manager.PlayerManager;
+
 public abstract class PlayerCommand implements Command {
+	
+	protected PlayerManager playerManager = Citadel.getPlayerManager();
 	
 	private final String name;
 	private String description = "";
