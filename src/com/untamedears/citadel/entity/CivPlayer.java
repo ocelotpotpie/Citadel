@@ -14,21 +14,6 @@ import com.untamedears.citadel.SecurityLevel;
 
 public class CivPlayer {
 
-    private static final HashMap<Player, CivPlayer> PLAYER_STATES = new HashMap<Player, CivPlayer>();
-
-    public static CivPlayer get(Player player) {
-        CivPlayer state = PLAYER_STATES.get(player);
-        if (state == null) {
-            state = new CivPlayer(player);
-            PLAYER_STATES.put(player, state);
-        }
-        return state;
-    }
-
-    public static void remove(Player player) {
-        PLAYER_STATES.remove(player);
-    }
-
     private Player player;
     private PlacementMode mode;
     private ReinforcementMaterial fortificationMaterial;
