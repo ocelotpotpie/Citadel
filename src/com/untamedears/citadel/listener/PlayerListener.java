@@ -23,27 +23,22 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.PlacementMode;
 import com.untamedears.citadel.SecurityLevel;
 import com.untamedears.citadel.access.AccessDelegate;
-import com.untamedears.citadel.entity.Faction;
-import com.untamedears.citadel.entity.Member;
-import com.untamedears.citadel.entity.PlayerState;
+import com.untamedears.citadel.entity.CivPlayer;
 import com.untamedears.citadel.entity.IReinforcement;
 import com.untamedears.citadel.entity.PlayerReinforcement;
-import com.untamedears.citadel.manager.GroupManager;
-import com.untamedears.citadel.manager.MemberManager;
-import com.untamedears.citadel.manager.PersonalGroupManager;
+import com.untamedears.citadel.manager.PlayerManager;
 
 /**
  * Created by IntelliJ IDEA.
@@ -56,41 +51,14 @@ import com.untamedears.citadel.manager.PersonalGroupManager;
  */
 public class PlayerListener implements Listener {
 
+	private PlayerManager playerManager = Citadel.getPlayerManager();
 	private BukkitScheduler scheduler = Citadel.getPlugin().getServer().getScheduler();
 	private Map<String, Integer> playersInMinecart = new HashMap<String, Integer>();
 
     @EventHandler
     public void login(PlayerLoginEvent ple) {
-        MemberManager memberManager = Citadel.getMemberManager();
-        memberManager.addOnlinePlayer(ple.getPlayer());
-
-        String playerName = ple.getPlayer().getName();
-        Member member = memberManager.getMember(playerName);
-        if(member == null){
-            member = new Member(playerName);
-            memberManager.addMember(member);
-        }
-
-        PersonalGroupManager personalGroupManager = Citadel.getPersonalGroupManager();
-        boolean hasPersonalGroup = personalGroupManager.hasPersonalGroup(playerName);
-        GroupManager groupManager = Citadel.getGroupManager();
-        if(!hasPersonalGroup){
-            String groupName = playerName;
-            int i = 1;
-            while(groupManager.isGroup(groupName)){
-                groupName = playerName + i;
-                i++;
-            }
-            Faction group = new Faction(groupName, playerName);
-            groupManager.addGroup(group);
-            personalGroupManager.addPersonalGroup(groupName, playerName);
-        } else if(hasPersonalGroup){
-            String personalGroupName = personalGroupManager.getPersonalGroup(playerName).getGroupName();
-            if(!groupManager.isGroup(personalGroupName)){
-                Faction group = new Faction(personalGroupName, playerName);
-                groupManager.addGroup(group);
-            }
-        }
+    	Player player = ple.getPlayer();
+		CivPlayer civPlayer = playerManager.getOrCreateCivPlayer(player);
     }
 
     @EventHandler
@@ -98,7 +66,7 @@ public class PlayerListener implements Listener {
         Player player = pqe.getPlayer();
         MemberManager memberManager = Citadel.getMemberManager();
         memberManager.removeOnlinePlayer(player);
-        PlayerState.remove(player);
+        CivPlayer.remove(player);
     	cancelPlayerInMinecartTask(player.getDisplayName());
     }
 
@@ -162,7 +130,7 @@ public class PlayerListener implements Listener {
         }
         if (pie.isCancelled()) return;
 
-        PlayerState state = PlayerState.get(player);
+        CivPlayer state = CivPlayer.get(player);
         PlacementMode placementMode = state.getMode();
         switch (placementMode) {
             case NORMAL:
