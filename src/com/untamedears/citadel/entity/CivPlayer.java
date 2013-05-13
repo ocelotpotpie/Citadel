@@ -12,14 +12,14 @@ import com.untamedears.citadel.Citadel;
 import com.untamedears.citadel.PlacementMode;
 import com.untamedears.citadel.SecurityLevel;
 
-public class PlayerState {
+public class CivPlayer {
 
-    private static final HashMap<Player, PlayerState> PLAYER_STATES = new HashMap<Player, PlayerState>();
+    private static final HashMap<Player, CivPlayer> PLAYER_STATES = new HashMap<Player, CivPlayer>();
 
-    public static PlayerState get(Player player) {
-        PlayerState state = PLAYER_STATES.get(player);
+    public static CivPlayer get(Player player) {
+        CivPlayer state = PLAYER_STATES.get(player);
         if (state == null) {
-            state = new PlayerState(player);
+            state = new CivPlayer(player);
             PLAYER_STATES.put(player, state);
         }
         return state;
@@ -38,7 +38,7 @@ public class PlayerState {
     private long lastThrottledMessage;
     private Integer cancelModePid;
 
-    public PlayerState(Player player) {
+    public CivPlayer(Player player) {
         reset();
         this.player = player;
         bypassMode = false;
