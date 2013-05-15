@@ -2,46 +2,55 @@ package com.untamedears.citadel.entity;
 
 import static com.untamedears.citadel.Utility.sendMessage;
 
-import java.util.HashMap;
-
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.PlacementMode;
-import com.untamedears.citadel.SecurityLevel;
+import com.untamedears.citadel.entity.PlayerReinforcement.SecurityLevel;
 
 public class CivPlayer {
 
-    private Player player;
-    private PlacementMode mode;
+	public enum Mode {
+		NORMAL,
+		REINFORCEMENT,
+		REINFORCEMENT_SINGLE_BLOCK,
+		FORTIFICATION,
+		INFO,
+		BYPASS
+	}
+	
+    private final Player player;
+    private Mode mode;
     private ReinforcementMaterial fortificationMaterial;
     private SecurityLevel securityLevel;
-    private boolean bypassMode;
     private long lastThrottledMessage;
     private Integer cancelModePid;
 
     public CivPlayer(Player player) {
-        reset();
         this.player = player;
-        bypassMode = false;
+        reset();
     }
     
-    /**
-     * Sets the placement mode to NORMAL and resets other properties.
-     */
     public void reset() {
-        mode = PlacementMode.NORMAL;
+        mode = Mode.NORMAL;
         fortificationMaterial = null;
         securityLevel = SecurityLevel.PUBLIC;
     }
+    
+    public Player getPlayer() {
+    	return player;
+    }
+    
+    public String getUsername() {
+    	return player.getName();
+    }
 
-    public PlacementMode getMode() {
+    public Mode getMode() {
         return mode;
     }
 
-    public void setMode(PlacementMode mode) {
+    public void setMode(Mode mode) {
         this.mode = mode;
     }
 
@@ -59,15 +68,6 @@ public class CivPlayer {
 
     public void setSecurityLevel(SecurityLevel securityLevel) {
         this.securityLevel = securityLevel;
-    }
-
-    public boolean isBypassMode() {
-        return bypassMode;
-    }
-
-    public boolean toggleBypassMode() {
-        bypassMode = !bypassMode;
-        return bypassMode;
     }
 
     public long getLastThrottledMessage() {
