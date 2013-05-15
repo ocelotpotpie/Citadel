@@ -1,6 +1,7 @@
 package com.untamedears.citadel.entity;
 
 import static com.untamedears.citadel.Utility.sendMessage;
+import groups.model.Group;
 
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -26,6 +27,7 @@ public class CivPlayer {
     private SecurityLevel securityLevel;
     private long lastThrottledMessage;
     private Integer cancelModePid;
+    private Group selectedGroup;
 
     public CivPlayer(Player player) {
         this.player = player;
@@ -78,7 +80,15 @@ public class CivPlayer {
         this.lastThrottledMessage = lastThrottledMessage;
     }
     
-    /**
+    public Group getSelectedGroup() {
+		return selectedGroup;
+	}
+
+	public void setSelectedGroup(Group selectedGroup) {
+		this.selectedGroup = selectedGroup;
+	}
+
+	/**
      * Prepares a scheduled task to reset the mode after a configured amount
      * of time.
      * 
