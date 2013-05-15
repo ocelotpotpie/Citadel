@@ -28,6 +28,7 @@ public class CivPlayer {
     private long lastThrottledMessage;
     private Integer cancelModePid;
     private Group selectedGroup;
+    private SecurityLevel selectedSecurityLevel;
 
     public CivPlayer(Player player) {
         this.player = player;
@@ -86,6 +87,14 @@ public class CivPlayer {
 
 	public void setSelectedGroup(Group selectedGroup) {
 		this.selectedGroup = selectedGroup;
+	}
+
+	public SecurityLevel getSelectedSecurityLevel() {
+		return selectedSecurityLevel;
+	}
+
+	public void setSelectedSecurityLevel(SecurityLevel selectedSecurityLevel) {
+		this.selectedSecurityLevel = selectedSecurityLevel;
 	}
 
 	/**
