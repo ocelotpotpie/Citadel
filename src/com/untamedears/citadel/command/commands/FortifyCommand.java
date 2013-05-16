@@ -1,111 +1,125 @@
 package com.untamedears.citadel.command.commands;
 
-import static com.untamedears.citadel.Utility.getSecurityLevel;
 import static com.untamedears.citadel.Utility.sendMessage;
 import static com.untamedears.citadel.Utility.setMultiMode;
+import groups.model.Group;
+import groups.model.Group.GroupStatus;
+import groups.model.Group.GroupType;
+import groups.model.GroupMember;
+import groups.model.GroupMember.Role;
+import groups.model.Member;
+
+import java.util.Map;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.PlacementMode;
-import com.untamedears.citadel.SecurityLevel;
 import com.untamedears.citadel.command.PlayerCommand;
-import com.untamedears.citadel.entity.Faction;
-import com.untamedears.citadel.entity.PlayerState;
+import com.untamedears.citadel.entity.CivPlayer;
+import com.untamedears.citadel.entity.CivPlayer.Mode;
+import com.untamedears.citadel.entity.PlayerReinforcement.SecurityLevel;
 import com.untamedears.citadel.entity.ReinforcementMaterial;
-import com.untamedears.citadel.manager.GroupManager;
-import com.untamedears.citadel.manager.ReinforcementManager;
 
-/**
- * User: JonnyD
- * Date: 7/18/12
- * Time: 11:57 PM
- */
 public class FortifyCommand extends PlayerCommand {
 
 	public FortifyCommand() {
 		super("Fority Mode");
 		setDescription("Toggle fortification mode");
-		setUsage("/ctfortify Â§8[security-level]");
+		setUsage("/ctfortify Â§8[security-level] [group]");
 		setArgumentRange(0, 2);
-		setIdentifiers(new String[] {"ctfortify", "ctf"});
+		setIdentifiers(new String[] { "ctfortify", "ctf" });
 	}
 
 	public boolean execute(CommandSender sender, String[] args) {
 		Player player = (Player) sender;
-		PlayerState state = PlayerState.get(player);
+		CivPlayer civPlayer = playerManager.getCivPlayer(player);
+		String username = civPlayer.getUsername();
 
-		String secLevel = null;
+		String securityLevelName = null;
 		String groupName = null;
-		if(args.length != 0){
-			secLevel = args[0];
-			if(args.length == 2){
+		if (args.length != 0) {
+			securityLevelName = args[0];
+			if (args.length == 2) {
 				groupName = args[1];
 			}
 		}
 
-		SecurityLevel securityLevel = getSecurityLevel(args, player);
-		if ((secLevel == null || secLevel.isEmpty()) && state.getMode() == PlacementMode.FORTIFICATION) {
-			securityLevel = state.getSecurityLevel();
+		SecurityLevel securityLevel;
+		if (securityLevelName != null) {
+			securityLevel = SecurityLevel.valueOf(securityLevelName
+					.toUpperCase());
+		} else {
+			securityLevel = SecurityLevel.PRIVATE;
 		}
-		if (securityLevel == null) return false;
 
-		if(securityLevel == SecurityLevel.GROUP){
-			Faction group;
-			if(!(groupName == null) && !(groupName.isEmpty()) && !(groupName.equals(""))){
-				GroupManager groupManager = Citadel.getGroupManager();
-				group = groupManager.getGroup(groupName);
-			} else if (state.getMode() == PlacementMode.FORTIFICATION && state.getSecurityLevel() == SecurityLevel.GROUP) {
-				/* Default to current faction */
-				group = state.getFaction();
+		if (securityLevel == SecurityLevel.GROUP) {
+			Group group;
+			if (groupName != null) {
+				group = groupMediator.getGroupByName(groupName);
 			} else {
-				sender.sendMessage(new StringBuilder().append("Â§cYou must specify a group in group fortification mode").toString());
-				sender.sendMessage(new StringBuilder().append("Â§cUsage:Â§e ").append("/ctfortify Â§8group <group-name>").toString());
+				sender.sendMessage(new StringBuilder()
+						.append("§cYou must specify a group in group fortification mode")
+						.toString());
+				sender.sendMessage(new StringBuilder().append("§cUsage:§e ")
+						.append("/ctfortify §8group <group-name>").toString());
 				return true;
 			}
-			if(group == null){
+
+			if (group == null) {
 				sendMessage(sender, ChatColor.RED, "Group doesn't exist");
 				return true;
 			}
-			if (group.isDisciplined()) {
-				sendMessage(sender, ChatColor.RED, Faction.kDisciplineMsg);
+
+			GroupStatus status = group.getStatus();
+			if (status == GroupStatus.DISCIPLINED) {
+				sendMessage(sender, ChatColor.RED, "Group under discipline");
 				return true;
 			}
+
 			String senderName = sender.getName();
-			if(!group.isFounder(senderName) && !group.isModerator(senderName)){
-				sendMessage(sender, ChatColor.RED, "Invalid permission to use this group");
+			GroupMember groupMember = group.getGroupMember(senderName);
+			Role role = groupMember.getRole();
+
+			boolean hasPermission = (role == Role.ADMIN || role == role.MODERATOR);
+			if (!hasPermission) {
+				sendMessage(sender, ChatColor.RED,
+						"Invalid permission to use this group");
 				return true;
 			}
-			if(group.isPersonalGroup()){
-				sendMessage(sender, ChatColor.RED, "You cannot share your default group");
+
+			if (group.isPersonal()) {
+				sendMessage(sender, ChatColor.RED,
+						"You cannot share your default group");
 				return true;
 			}
-			state.setFaction(group);
+
+			civPlayer.setSelectedGroup(group);
 		} else {
-			state.setFaction(Citadel.getMemberManager().getMember(player).getPersonalGroup());
+			Member member = groupMediator.getMemberByUsername(username);
+			Group personalGroup = member.getPersonalGroup();
+			civPlayer.setSelectedGroup(personalGroup);
 		}
 
-		ReinforcementManager reinforcementManager = Citadel.getReinforcementManager();
-		ReinforcementMaterial material = reinforcementManager.getReinforcementMaterial(player.getItemInHand().getType());
-		if (state.getMode() == PlacementMode.FORTIFICATION) {
-			// Only change material if a valid reinforcement material in hand and not current reinforcement
-			if (material != null && material != state.getReinforcementMaterial()) {
-				// Switch reinforcement materials without turning off and on again
-				state.reset();
-				state.setFortificationMaterial(material);
-			}
-			setMultiMode(PlacementMode.FORTIFICATION, securityLevel, args, player, state);
+		Material itemInHand = player.getItemInHand().getType();
+		String itemInHandName = itemInHand.name();
+
+		Map<String, ReinforcementMaterial> reinforcementMaterials = configManager
+				.getReinforcementMaterials();
+		ReinforcementMaterial reinforcementMaterial = reinforcementMaterials
+				.get(itemInHandName);
+
+		if (reinforcementMaterial != null) {
+			civPlayer.setFortificationMaterial(reinforcementMaterial);
+			civPlayer.reset();
 		} else {
-			if (material == null) {
-				sendMessage(sender, ChatColor.YELLOW, "Invalid reinforcement material %s", player.getItemInHand().getType().name());
-			} else {
-				state.setFortificationMaterial(material);
-				setMultiMode(PlacementMode.FORTIFICATION, securityLevel, args, player, state);
-			}
+			sendMessage(sender, ChatColor.YELLOW,
+					"Invalid reinforcement material %s", itemInHandName);
+			return true;
 		}
 
+		setMultiMode(Mode.FORTIFICATION, securityLevel, civPlayer);
 		return true;
 	}
 
