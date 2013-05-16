@@ -13,7 +13,12 @@ import com.untamedears.citadel.entity.PlayerReinforcement.SecurityLevel;
 public class CivPlayer {
 
 	public enum Mode {
-		NORMAL, REINFORCEMENT, REINFORCEMENT_SINGLE_BLOCK, FORTIFICATION, INFO, BYPASS
+		NORMAL, 
+		REINFORCEMENT, 
+		REINFORCEMENT_SINGLE_BLOCK, 
+		FORTIFICATION, 
+		INFO, 
+		BYPASS
 	}
 
 	private final Player player;
@@ -22,7 +27,7 @@ public class CivPlayer {
 	private long lastThrottledMessage;
 	private Integer cancelModePid;
 	private Group group;
-	private SecurityLevel securityLevel = SecurityLevel.PRIVATE;
+	private SecurityLevel securityLevel;
 
 	public CivPlayer(Player player) {
 		this.player = player;
@@ -32,7 +37,7 @@ public class CivPlayer {
 	public void reset() {
 		mode = Mode.NORMAL;
 		fortificationMaterial = null;
-		securityLevel = SecurityLevel.PUBLIC;
+		securityLevel = SecurityLevel.PRIVATE;
 	}
 
 	public Player getPlayer() {
