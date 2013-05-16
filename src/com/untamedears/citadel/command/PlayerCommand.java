@@ -3,11 +3,17 @@ package com.untamedears.citadel.command;
 import org.bukkit.command.CommandSender;
 
 import com.untamedears.citadel.Citadel;
+import com.untamedears.citadel.groups.GroupMediator;
+import com.untamedears.citadel.manager.ConfigManager;
 import com.untamedears.citadel.manager.PlayerManager;
+import com.untamedears.citadel.manager.ReinforcementManager;
 
 public abstract class PlayerCommand implements Command {
 	
+	protected ConfigManager configManager = Citadel.getConfigManager();
 	protected PlayerManager playerManager = Citadel.getPlayerManager();
+	protected GroupMediator groupMediator = Citadel.getGroupMediator();
+	protected ReinforcementManager reinforcementManager = Citadel.getReinforcementManager();
 	
 	private final String name;
 	private String description = "";
