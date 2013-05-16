@@ -370,16 +370,13 @@ public class Utility {
 	}
 
 	public static void setSingleMode(SecurityLevel securityLevel,
-			CivPlayer state, Player player) {
-		Faction group = state.getFaction();
-		if (group != null && group.isDisciplined()) {
-			sendMessage(player, ChatColor.RED, Faction.kDisciplineMsg);
-			return;
-		}
-		if (state.getMode() != PlacementMode.REINFORCEMENT_SINGLE_BLOCK) {
-			state.setSecurityLevel(securityLevel);
-			state.setMode(PlacementMode.REINFORCEMENT_SINGLE_BLOCK);
-			sendMessage(player, ChatColor.GREEN,
+			CivPlayer civPlayer) {
+		Group group = civPlayer.getGroup();
+		Mode currentMode = civPlayer.getMode();
+		if (currentMode != Mode.REINFORCEMENT_SINGLE_BLOCK) {
+			civPlayer.setSecurityLevel(securityLevel);
+			civPlayer.setMode(Mode.REINFORCEMENT_SINGLE_BLOCK);
+			sendMessage(civPlayer.getPlayer(), ChatColor.GREEN,
 					"Single block reinforcement mode %s", securityLevel.name()
 							+ ".");
 		}
