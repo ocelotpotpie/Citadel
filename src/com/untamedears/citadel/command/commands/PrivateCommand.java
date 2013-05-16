@@ -1,20 +1,16 @@
 package com.untamedears.citadel.command.commands;
 
 import static com.untamedears.citadel.Utility.setSingleMode;
+import groups.model.Group;
+import groups.model.Member;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.SecurityLevel;
 import com.untamedears.citadel.command.PlayerCommand;
-import com.untamedears.citadel.entity.PlayerState;
+import com.untamedears.citadel.entity.CivPlayer;
+import com.untamedears.citadel.entity.PlayerReinforcement.SecurityLevel;
 
-/**
- * User: JonnyD
- * Date: 7/18/12
- * Time: 11:57 PM
- */
 public class PrivateCommand extends PlayerCommand {
 
 	public PrivateCommand() {
@@ -26,9 +22,11 @@ public class PrivateCommand extends PlayerCommand {
 
 	public boolean execute(CommandSender sender, String[] args) {
 		Player player = (Player) sender;
-		PlayerState state = PlayerState.get(player);
-		state.setFaction(Citadel.getMemberManager().getMember(player).getPersonalGroup());
-		setSingleMode(SecurityLevel.PRIVATE, state, player);
+		CivPlayer civPlayer = playerManager.getCivPlayer(player);
+		Member member = groupMediator.getMemberByUsername(player.getName());
+		Group personalGroup = member.getPersonalGroup();
+		civPlayer.setGroup(personalGroup);
+		setSingleMode(SecurityLevel.PRIVATE, civPlayer);
 		return true;
 	}
 
