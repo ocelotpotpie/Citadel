@@ -95,11 +95,11 @@ public class FortifyCommand extends PlayerCommand {
 				return true;
 			}
 
-			civPlayer.setSelectedGroup(group);
+			civPlayer.setGroup(group);
 		} else {
 			Member member = groupMediator.getMemberByUsername(username);
 			Group personalGroup = member.getPersonalGroup();
-			civPlayer.setSelectedGroup(personalGroup);
+			civPlayer.setGroup(personalGroup);
 		}
 
 		Material itemInHand = player.getItemInHand().getType();
