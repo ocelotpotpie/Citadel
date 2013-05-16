@@ -1,21 +1,15 @@
 package com.untamedears.citadel.command.commands;
 
-import static com.untamedears.citadel.Utility.getSecurityLevel;
 import static com.untamedears.citadel.Utility.setMultiMode;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import com.untamedears.citadel.PlacementMode;
-import com.untamedears.citadel.SecurityLevel;
 import com.untamedears.citadel.command.PlayerCommand;
-import com.untamedears.citadel.entity.PlayerState;
+import com.untamedears.citadel.entity.CivPlayer;
+import com.untamedears.citadel.entity.CivPlayer.Mode;
+import com.untamedears.citadel.entity.PlayerReinforcement.SecurityLevel;
 
-/**
- * User: JonnyD & chrisrico
- * Date: 7/18/12
- * Time: 11:57 PM
- */
 public class InfoCommand extends PlayerCommand {
 
 	public InfoCommand() {
@@ -27,12 +21,14 @@ public class InfoCommand extends PlayerCommand {
 
 	public boolean execute(CommandSender sender, String[] args) {
 		Player player = (Player) sender;
-		PlayerState state = PlayerState.get(player);
+		CivPlayer civPlayer = playerManager.getCivPlayer(player);
 		
-		SecurityLevel securityLevel = getSecurityLevel(args, player);
-        if (securityLevel == null) return false;
+		SecurityLevel securityLevel = civPlayer.getSecurityLevel();
+        if (securityLevel == null) {
+        	return false;
+        }
         
-        setMultiMode(PlacementMode.INFO, SecurityLevel.PUBLIC, args, player, state);
+        setMultiMode(Mode.INFO, SecurityLevel.PUBLIC, civPlayer);
 		return true;
 	}
 
