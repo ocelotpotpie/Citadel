@@ -7,13 +7,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.untamedears.citadel.command.PlayerCommand;
-import com.untamedears.citadel.entity.PlayerState;
+import com.untamedears.citadel.entity.CivPlayer;
 
-/**
- * User: JonnyD & chrisrico
- * Date: 7/18/12
- * Time: 11:57 PM
- */
 public class OffCommand extends PlayerCommand {
 
 	public OffCommand() {
@@ -25,12 +20,9 @@ public class OffCommand extends PlayerCommand {
 
 	public boolean execute(CommandSender sender, String[] args) {
 		Player player = (Player) sender;
-		PlayerState state = PlayerState.get(player);
-        
-        state.reset();
-        if (state.isBypassMode()) state.toggleBypassMode();
+		CivPlayer civPlayer = playerManager.getCivPlayer(player);
+        civPlayer.reset();
         sendMessage(player, ChatColor.GREEN, "All Citadel modes set to normal");
-        
 		return true;
 	}
 
