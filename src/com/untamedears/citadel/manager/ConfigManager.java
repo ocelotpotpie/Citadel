@@ -2,6 +2,7 @@ package com.untamedears.citadel.manager;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -38,6 +39,8 @@ public class ConfigManager {
 	private int cacheMaxChunks;
 	
 	private Map<String, ReinforcementMaterial> reinforcementMaterials;
+	private List<Integer> securable;
+	private List<Integer> nonReinforceable;
 
 	private File main;
 	private FileConfiguration config;
@@ -45,6 +48,7 @@ public class ConfigManager {
 	
 	public void load() {
 		this.reinforcementMaterials = new HashMap<String, ReinforcementMaterial>();
+		this.securable = new ArrayList<Integer>();
 		Citadel plugin = Citadel.getPlugin();
 		this.config = plugin.getConfig();
 		this.cleanConfig = new YamlConfiguration();
@@ -85,46 +89,27 @@ public class ConfigManager {
         	int strength = (Integer) map.get("strength");
         	int requirements = (Integer) map.get("requirements");
         	
-        	int materialId;
-        	Material material = Material.matchMaterial(name);
-            if (material != null) {
-            	materialId = material.getId();
-            } else {
-            	try {
-            		materialId = Integer.parseInt(name);
-            	} catch(NumberFormatException e) {
-            		throw new IllegalArgumentException("Invalid reinforcement material");
-            	}
+        	int id = getMaterialId(name);
+        	if(id != 0) {
+	        	ReinforcementMaterial reinforcementMaterial = new ReinforcementMaterial(id, strength, requirements);
+	        	this.reinforcementMaterials.put(name, reinforcementMaterial);
         	}
-        	
-        	ReinforcementMaterial reinforcementMaterial = new ReinforcementMaterial(materialId, strength, requirements);
-        	this.reinforcementMaterials.put(material.name().toString(), reinforcementMaterial);
         }
         
-        for (String name : config.getStringList("additionalSecurable")) {
-            Material material = Material.matchMaterial(name);
-            if (material != null) {
-            	PlayerReinforcement.SECURABLE.add(material.getId());
-            } else {
-            	try {
-            		PlayerReinforcement.SECURABLE.add(Integer.parseInt(name));
-            	} catch (NumberFormatException e) {
-            		Citadel.warning("Invalid additionalSecurable material " + name);
-            	}
+        for (String name : loadStringList("additionalSecurable")) {
+           int id = getMaterialId(name);
+           if(id != 0) {
+        	   securable.add(id);
+           }
+        }
+        
+        for (String name : loadStringList("nonReinforceable")) {
+        	int id = getMaterialId(name);
+            if(id != 0) {
+         	   nonReinforceable.add(id);
             }
         }
-        for (String name : config.getStringList("nonReinforceable")) {
-        	Material material = Material.matchMaterial(name);
-            if (material != null) {
-            	PlayerReinforcement.NON_REINFORCEABLE.add(material.getId());
-            } else {
-            	try {
-            		PlayerReinforcement.NON_REINFORCEABLE.add(Integer.parseInt(name));
-            	} catch (NumberFormatException e) {
-            		Citadel.warning("Invalid nonReinforceable material " + name);
-            	}
-            }
-        }
+        
         ConfigurationSection naturalReinforcements =
             config.getConfigurationSection("naturalReinforcements");
         if (naturalReinforcements != null) {
@@ -141,6 +126,20 @@ public class ConfigManager {
         }
 	}
 	
+	private Integer getMaterialId(String name) {
+		Material material = Material.matchMaterial(name);
+		int id = 0;
+        if (material != null) {
+        	id = material.getId();
+        } else {
+        	try {
+        		id = Integer.parseInt(name);
+        	} catch (NumberFormatException e) {
+        		Citadel.warning("Invalid additionalSecurable material " + name);
+        	}
+        }
+        return id;
+	}
 
 	private Boolean loadBoolean(String path) {
         if (config.isBoolean(path)) {
@@ -309,6 +308,22 @@ public class ConfigManager {
 	public void setReinforcementMaterials(
 			Map<String, ReinforcementMaterial> reinforcementMaterials) {
 		this.reinforcementMaterials = reinforcementMaterials;
+	}
+
+	public List<Integer> getSecurable() {
+		return securable;
+	}
+
+	public void setSecurable(List<Integer> securable) {
+		this.securable = securable;
+	}
+
+	public List<Integer> getNonReinforceable() {
+		return nonReinforceable;
+	}
+
+	public void setNonReinforceable(List<Integer> nonReinforceable) {
+		this.nonReinforceable = nonReinforceable;
 	}
 
 	public File getMain() {
