@@ -1,6 +1,7 @@
 package com.untamedears.citadel.manager;
 
-import java.util.HashSet;
+import groups.model.Group;
+
 import java.util.Map;
 import java.util.Set;
 
@@ -9,7 +10,10 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 
 import com.untamedears.citadel.Citadel;
+import com.untamedears.citadel.entity.CivPlayer;
 import com.untamedears.citadel.entity.IReinforcement;
+import com.untamedears.citadel.entity.NaturalReinforcement;
+import com.untamedears.citadel.entity.PlayerReinforcement;
 import com.untamedears.citadel.entity.ReinforcementMaterial;
 import com.untamedears.citadel.storage.ReinforcementStorage;
 
@@ -48,6 +52,23 @@ public class ReinforcementManager {
 		return this.reinforcementMaterial;
 	}
 	
+	public static IReinforcement createNaturalReinforcement(Block block) {
+		Material material = block.getType();
+		int breakCount = Citadel.getConfigManager().getMaterialBreakCount(
+				material.getId(), block.getY());
+		if (breakCount <= 1) {
+			return null;
+		}
+		NaturalReinforcement nr = new NaturalReinforcement(block, breakCount);
+		Citadel.getReinforcementManager().addReinforcement(nr);
+		return nr;
+	}
+
+	public IReinforcement createPlayerReinforcement(Block block, ReinforcementMaterial material, CivPlayer civPlayer) {
+		PlayerReinforcement reinforcement = new PlayerReinforcement(block, material, civPlayer.getGroup(), civPlayer.getUsername(), civPlayer.getSecurityLevel());
+		return addReinforcement(reinforcement);
+	} 
+	
 	public IReinforcement getReinforcement(Block block){
 		return this.storage.findReinforcement(block);
 	}
@@ -58,10 +79,6 @@ public class ReinforcementManager {
 	
 	public Set<IReinforcement> getReinforcementsByGroup(String groupName){
 		return this.storage.findReinforcementsByGroup(groupName);
-	}
-	
-	public void moveReinforcements(String from, String target){
-		this.storage.moveReinforcements(from, target);
 	}
 	
 	public IReinforcement addReinforcement(IReinforcement reinforcement){
