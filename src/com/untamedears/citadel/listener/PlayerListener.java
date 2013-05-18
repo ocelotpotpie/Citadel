@@ -4,12 +4,12 @@ import static com.untamedears.citadel.Utility.createPlayerReinforcement;
 import static com.untamedears.citadel.Utility.isReinforced;
 import static com.untamedears.citadel.Utility.reinforcementBroken;
 import static com.untamedears.citadel.Utility.sendMessage;
+import groups.model.Group;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -33,22 +33,14 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.SecurityLevel;
 import com.untamedears.citadel.access.AccessDelegate;
 import com.untamedears.citadel.entity.CivPlayer;
+import com.untamedears.citadel.entity.CivPlayer.Mode;
 import com.untamedears.citadel.entity.IReinforcement;
 import com.untamedears.citadel.entity.PlayerReinforcement;
+import com.untamedears.citadel.entity.PlayerReinforcement.SecurityLevel;
 import com.untamedears.citadel.manager.PlayerManager;
 
-/**
- * Created by IntelliJ IDEA.
- * User: chrisrico
- * Date: 3/21/12
- * Time: 9:57 PM
- * 
- * Last edited by JonnyD
- * 7/18/12
- */
 public class PlayerListener implements Listener {
 
 	private PlayerManager playerManager = Citadel.getPlayerManager();
@@ -58,16 +50,15 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void login(PlayerLoginEvent ple) {
     	Player player = ple.getPlayer();
-		CivPlayer civPlayer = playerManager.getOrCreateCivPlayer(player);
+		playerManager.getOrCreateCivPlayer(player);
     }
 
     @EventHandler
     public void quit(PlayerQuitEvent pqe) {
         Player player = pqe.getPlayer();
-        MemberManager memberManager = Citadel.getMemberManager();
-        memberManager.removeOnlinePlayer(player);
-        CivPlayer.remove(player);
-    	cancelPlayerInMinecartTask(player.getDisplayName());
+        String username = player.getName();
+        playerManager.removeCivPlayer(username);
+    	cancelPlayerInMinecartTask(username);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -97,145 +88,161 @@ public class PlayerListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void interact(PlayerInteractEvent pie) {
         try {
-        if (!pie.hasBlock()) return;
+        	if (!pie.hasBlock())
+        	{
+        		return;
+        	}
         
-        onMinecartInteract(pie);
-
-        Player player = pie.getPlayer();
-        Block block = pie.getClickedBlock();
-
-        AccessDelegate accessDelegate = AccessDelegate.getDelegate(block);
-        block = accessDelegate.getBlock();
-        IReinforcement generic_reinforcement = accessDelegate.getReinforcement();
-        PlayerReinforcement reinforcement = null;
-        if (generic_reinforcement instanceof PlayerReinforcement) {
-            reinforcement = (PlayerReinforcement)generic_reinforcement;
-        }
-
-        Action action = pie.getAction();
-        boolean access_reinforcement = 
-            action == Action.RIGHT_CLICK_BLOCK
-            && reinforcement != null
-            && reinforcement.isSecurable();
-        boolean normal_access_denied =
-            reinforcement != null
-            && !reinforcement.isAccessible(player);
-        boolean admin_can_access = player.hasPermission("citadel.admin.accesssecurable");
-        if (access_reinforcement && normal_access_denied && !admin_can_access) {
-            Citadel.info(String.format(
-                "%s failed to access locked reinforcement at %s",
-                player.getName(), block.getLocation().toString()));
-            sendMessage(pie.getPlayer(), ChatColor.RED, "%s is locked", block.getType().name());
-            pie.setCancelled(true);
-        }
-        if (pie.isCancelled()) return;
-
-        CivPlayer state = CivPlayer.get(player);
-        PlacementMode placementMode = state.getMode();
-        switch (placementMode) {
-            case NORMAL:
-                if (access_reinforcement && normal_access_denied && admin_can_access) {
-                    Citadel.info(String.format(
-                        "[Admin] %s accessed locked reinforcement at %s",
-                        player.getName(), block.getLocation().toString()));
-                }
-                return;
-            case FORTIFICATION:
-                return;
-            case INFO:
-                // did player click on a reinforced block?
-                if (reinforcement != null) {
-                    String reinforcementStatus = reinforcement.getStatus();
-                    SecurityLevel securityLevel = reinforcement.getSecurityLevel();
-                    Faction group = reinforcement.getOwner();
-                    String message;
-                    if (player.hasPermission("citadel.admin.ctinfodetails")) {
-                        message = String.format("Loc[%s]  Chunk[%s]", 
-                            reinforcement.getId().toString(),
-                            reinforcement.getChunkId());
-                        sendMessage(player, ChatColor.GREEN, message);
-                        String groupName = "!NULL!";
-                        if (group != null) {
-                            if (group.isPersonalGroup()) {
-                                groupName = String.format("[%s] (Personal)", group.getName());
-                            } else {
-                                groupName = String.format("[%s]", group.getName());
-                            }
-                        }
-                        message = String.format(" Group%s  Durability[%d/%d]",
-                            groupName,
-                            reinforcement.getDurability(),
-                            reinforcement.getMaterial().getStrength());
-                        sendMessage(player, ChatColor.GREEN, message);
-                    } else if(reinforcement.isAccessible(player)){
-                        boolean is_personal_group = false;
-                        String groupName = "!NULL!";
-                        if (group != null) {
-                            groupName = group.getName();
-                            is_personal_group = group.isPersonalGroup();
-                        }
-                        if(is_personal_group){
-                            message = String.format("%s, security: %s, group: %s (Default Group)", reinforcementStatus, securityLevel, groupName);
-                        } else {
-                            message = String.format("%s, security: %s, group: %s", reinforcementStatus, securityLevel, groupName);
-                        }
-                        sendMessage(player, ChatColor.GREEN, message);
-                    } else {
-                        sendMessage(player, ChatColor.RED, "%s, security: %s", reinforcementStatus, securityLevel);
-                    }
-                    if (player.getGameMode() == GameMode.CREATIVE) {
-                        pie.setCancelled(true);
-                    }
-                }
-                break;
-
-            default:
-                // player is in reinforcement mode
-                if (reinforcement == null) {
-                    // Break any natural reinforcement before placing the player reinforcement
-                    if (generic_reinforcement != null) {
-                        reinforcementBroken(generic_reinforcement);
-                    }
-                    createPlayerReinforcement(player, block);
-                } else if (reinforcement.isBypassable(player)) {
-                    boolean update = false;
-                    String message = "";
-                    if (reinforcement.getSecurityLevel() != state.getSecurityLevel()){
-                        reinforcement.setSecurityLevel(state.getSecurityLevel());
-                        update = true;
-                        message = String.format("Changed security level %s", reinforcement.getSecurityLevel().name());
-                    }
-                    Faction group = state.getFaction();
-                    if(!reinforcement.getOwner().equals(group)) {
-                        reinforcement.setOwner(group);
-                        update = true;
-                        if(!message.equals("")){
-                            message = message + ". ";
-                        }
-                        if(reinforcement.getSecurityLevel() != SecurityLevel.PRIVATE){
-                            message = message + String.format("Changed group to %s", group.getName());
-                        }
-                    }
-                    if(update){
-                        Citadel.getReinforcementManager().addReinforcement(reinforcement);
-                        sendMessage(player, ChatColor.GREEN, message);
-                    }
-                } else {
-                    sendMessage(player, ChatColor.RED, "You are not permitted to modify this reinforcement");
-                }
-                pie.setCancelled(true);
-                if (state.getMode() == PlacementMode.REINFORCEMENT_SINGLE_BLOCK) {
-                    state.reset();
-                } else {
-                    state.checkResetMode();
-                }
-        }
-
+	        onMinecartInteract(pie);
+	        onBlockInteract(pie);
         }
         catch(Exception e)
         {
             Citadel.printStackTrace(e);
         }
+    }
+    
+    private void onBlockInteract(PlayerInteractEvent pie) {
+    	Player player = pie.getPlayer();
+    	Block block = pie.getClickedBlock();
+
+    	AccessDelegate accessDelegate = AccessDelegate.getDelegate(block);
+    	block = accessDelegate.getBlock();
+    	
+    	IReinforcement genericReinforcement = accessDelegate.getReinforcement();
+    	PlayerReinforcement reinforcement = null;
+    	if (genericReinforcement instanceof PlayerReinforcement) {
+    		reinforcement = (PlayerReinforcement) genericReinforcement;
+    	}
+
+    	Action action = pie.getAction();
+    	boolean isReinforced = reinforcement != null;
+    	boolean rightClicked = action == Action.RIGHT_CLICK_BLOCK;
+    	boolean isSecurable = isReinforced && rightClicked && reinforcement.isSecurable();
+    	boolean isAccessible = isReinforced && reinforcement.isAccessible(player);
+    	boolean adminCanAccess = player.hasPermission("citadel.admin.accesssecurable");
+    	
+    	if (isSecurable && !isAccessible && !adminCanAccess) {
+    		Citadel.info(String.format(
+    				"%s failed to access locked reinforcement at %s",
+    				player.getName(), block.getLocation().toString()));
+    		sendMessage(pie.getPlayer(), ChatColor.RED, "%s is locked", block.getType().name());
+    		pie.setCancelled(true);
+    	}
+    	
+    	if (pie.isCancelled()) {
+    		return;
+    	}
+
+    	CivPlayer civPlayer = playerManager.getCivPlayer(player);
+    	Mode mode = civPlayer.getMode();
+    	switch (mode) {
+    	case NORMAL:
+    		if (isSecurable && !isAccessible && adminCanAccess) {
+    			Citadel.info(String.format(
+    					"[Admin] %s accessed locked reinforcement at %s",
+    					player.getName(), block.getLocation().toString()));
+    		}
+    		return;
+    	case FORTIFICATION:
+    		return;
+    	case INFO:
+    		if (isReinforced) {
+    			String status = reinforcement.getStatus();
+    			SecurityLevel securityLevel = reinforcement.getSecurityLevel();
+    			Group group = reinforcement.getGroup();
+    			boolean isPersonal = group.isPersonal();
+    			String groupName = "!NULL!";
+    			ChatColor chatColor = ChatColor.RED;
+    			String message = "!NULL!";
+    			
+    			if (player.hasPermission("citadel.admin.ctinfodetails")) {
+    				message = String.format("Loc[%s]  Chunk[%s]", 
+    						reinforcement.getId().toString(),
+    						reinforcement.getChunkId());
+    				sendMessage(player, ChatColor.GREEN, message);
+    				
+    				if (group != null) {
+    					if (isPersonal) {
+    						groupName = String.format("[%s] (Personal)", group.getName());
+    					} else {
+    						groupName = String.format("[%s]", group.getName());
+    					}
+    				}
+    				
+    				message = String.format(" Group%s  Durability[%d/%d]",
+    						groupName,
+    						reinforcement.getDurability(),
+    						reinforcement.getMaterial().getStrength());
+    				chatColor = ChatColor.GREEN;
+    			} else if (reinforcement.isAccessible(player)) {
+    				
+    				if (group != null) {
+    					groupName = group.getName();
+    				}
+    				
+    				if(isPersonal){
+    					message = String.format("%s, security: %s, group: %s (Personal)", status, securityLevel, groupName);
+    				} else {
+    					message = String.format("%s, security: %s, group: %s", status, securityLevel, groupName);
+    				}
+    				
+    				chatColor = ChatColor.GREEN;
+    			} else {
+    				message = String.format("%s, security: %s", status, securityLevel);
+    				chatColor = ChatColor.RED;
+    			}
+    			
+				sendMessage(player, chatColor, message);
+    		}
+    		break;
+    	case REINFORCEMENT:
+    		if (reinforcement == null) {
+    			// Break any natural reinforcement before placing the player reinforcement
+    			if (genericReinforcement != null) {
+    				reinforcementBroken(genericReinforcement);
+    			}
+    			createPlayerReinforcement(player, block);
+    		}
+    		break;
+    	case REINFORCEMENT_SINGLE_BLOCK:
+    		if (reinforcement.isBypassable(player)) {
+    			
+    			String message = "";
+    			SecurityLevel reinforcementSecurityLevel = reinforcement.getSecurityLevel();
+    			SecurityLevel selectedSecurityLevel = civPlayer.getSecurityLevel();
+    			
+    			if (reinforcementSecurityLevel != selectedSecurityLevel) {
+    				reinforcement.setSecurityLevel(selectedSecurityLevel);
+    				message = String.format("Changed security level %s", selectedSecurityLevel);
+    			}
+    			
+    			Group group = reinforcement.getGroup();
+    			Group selectedGroup = civPlayer.getGroup();
+    			
+    			if (!group.equals(selectedGroup)) {
+    			
+    				String selectedGroupName = selectedGroup.getName();
+    				reinforcement.setGroupName(selectedGroupName);
+    				
+    				if(!message.equals("")) {
+    					message = message + ". ";
+    				}
+    				
+    				message = message + String.format("Changed group from %s to %s", group.getName(), selectedGroupName);
+    			}
+    			
+    			if (!message.equalsIgnoreCase("")) {
+    				Citadel.getReinforcementManager().addReinforcement(reinforcement);
+    				sendMessage(player, ChatColor.GREEN, message);
+    			}
+    			
+    		} else {
+    			sendMessage(player, ChatColor.RED, "You are not permitted to modify this reinforcement");
+    		}
+    		civPlayer.reset();
+    		break;
+    	}
     }
     
     private void onMinecartInteract(PlayerInteractEvent event) {
