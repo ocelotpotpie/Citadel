@@ -11,11 +11,6 @@ import org.bukkit.command.CommandSender;
 import com.untamedears.citadel.command.PlayerCommand;
 import com.untamedears.citadel.entity.PlayerReinforcement;
 
-/**
- * User: JonnyD
- * Date: 7/18/12
- * Time: 11:57 PM
- */
 public class SecurableCommand extends PlayerCommand {
 
 	public SecurableCommand() {

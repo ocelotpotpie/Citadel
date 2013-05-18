@@ -9,7 +9,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 import com.untamedears.citadel.command.PlayerCommand;
-import com.untamedears.citadel.entity.PlayerReinforcement;
 
 public class NonReinforceableCommand extends PlayerCommand {
 

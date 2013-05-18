@@ -8,81 +8,42 @@ import java.util.Map;
 import org.bukkit.command.CommandSender;
 
 import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.command.commands.AddModCommand;
-import com.untamedears.citadel.command.commands.AllowCommand;
 import com.untamedears.citadel.command.commands.BypassCommand;
 import com.untamedears.citadel.command.commands.ConsoleCommands;
-import com.untamedears.citadel.command.commands.CreateCommand;
-import com.untamedears.citadel.command.commands.DeleteCommand;
-import com.untamedears.citadel.command.commands.DisallowCommand;
-import com.untamedears.citadel.command.commands.DisciplineCommand;
 import com.untamedears.citadel.command.commands.FortifyCommand;
 import com.untamedears.citadel.command.commands.GroupCommand;
-import com.untamedears.citadel.command.commands.GroupInfoCommand;
-import com.untamedears.citadel.command.commands.GroupStatsCommand;
-import com.untamedears.citadel.command.commands.GroupsCommand;
 import com.untamedears.citadel.command.commands.InfoCommand;
-import com.untamedears.citadel.command.commands.JoinCommand;
-import com.untamedears.citadel.command.commands.LeaveCommand;
 import com.untamedears.citadel.command.commands.MaterialsCommand;
-import com.untamedears.citadel.command.commands.MembersCommand;
-import com.untamedears.citadel.command.commands.ModeratorsCommand;
 import com.untamedears.citadel.command.commands.NonReinforceableCommand;
 import com.untamedears.citadel.command.commands.OffCommand;
-import com.untamedears.citadel.command.commands.PasswordCommand;
 import com.untamedears.citadel.command.commands.PlayerStatsCommand;
 import com.untamedears.citadel.command.commands.PrivateCommand;
 import com.untamedears.citadel.command.commands.PublicCommand;
-import com.untamedears.citadel.command.commands.ReprieveCommand;
 import com.untamedears.citadel.command.commands.ReinforceCommand;
-import com.untamedears.citadel.command.commands.RemoveModCommand;
 import com.untamedears.citadel.command.commands.SecurableCommand;
 import com.untamedears.citadel.command.commands.StatsCommand;
-import com.untamedears.citadel.command.commands.TransferCommand;
 import com.untamedears.citadel.command.commands.VersionCommand;
 
-/**
- * User: JonnyD
- * Date: 07/18/12
- * Time: 11:57 PM
- */
 public class CommandHandler {
 
 	private Map<String, Command> commands = new LinkedHashMap<String, Command>();
 	private Map<String, Command> identifiers = new HashMap<String, Command>();
 
     public void registerCommands() {
-        this.addCommand(new AddModCommand());
-        this.addCommand(new AllowCommand());
-        this.addCommand(new BypassCommand());
-        this.addCommand(new ConsoleCommands());
-        this.addCommand(new CreateCommand());
-        this.addCommand(new DeleteCommand());
-        this.addCommand(new DisallowCommand());
-        this.addCommand(new DisciplineCommand());
-        this.addCommand(new FortifyCommand());
-        this.addCommand(new GroupCommand());
-        this.addCommand(new GroupInfoCommand());
-        this.addCommand(new GroupsCommand());
         this.addCommand(new InfoCommand());
-        this.addCommand(new JoinCommand());
-        this.addCommand(new LeaveCommand());
-        this.addCommand(new MaterialsCommand());
-        this.addCommand(new MembersCommand());
-        this.addCommand(new ModeratorsCommand());
-        this.addCommand(new NonReinforceableCommand());
+        this.addCommand(new BypassCommand());
+        this.addCommand(new FortifyCommand());
+        this.addCommand(new ReinforceCommand());
         this.addCommand(new OffCommand());
-        this.addCommand(new PasswordCommand());
+        this.addCommand(new ConsoleCommands());
+        this.addCommand(new GroupCommand());
+        this.addCommand(new MaterialsCommand());
+        this.addCommand(new NonReinforceableCommand());
         this.addCommand(new PrivateCommand());
         this.addCommand(new PublicCommand());
-        this.addCommand(new ReprieveCommand());
-        this.addCommand(new ReinforceCommand());
-        this.addCommand(new RemoveModCommand());
         this.addCommand(new SecurableCommand());
         this.addCommand(new StatsCommand());
-        this.addCommand(new GroupStatsCommand());
         this.addCommand(new PlayerStatsCommand());
-        this.addCommand(new TransferCommand());
         this.addCommand(new VersionCommand());
     }
 
