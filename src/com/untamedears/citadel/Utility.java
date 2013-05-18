@@ -1,6 +1,7 @@
 package com.untamedears.citadel;
 
 import groups.model.Group;
+import groups.model.Group.GroupStatus;
 
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
@@ -25,7 +26,6 @@ import org.bukkit.material.Wool;
 
 import com.untamedears.citadel.access.AccessDelegate;
 import com.untamedears.citadel.entity.CivPlayer.Mode;
-import com.untamedears.citadel.entity.Faction;
 import com.untamedears.citadel.entity.CivPlayer;
 import com.untamedears.citadel.entity.IReinforcement;
 import com.untamedears.citadel.entity.NaturalReinforcement;
@@ -33,22 +33,13 @@ import com.untamedears.citadel.entity.PlayerReinforcement;
 import com.untamedears.citadel.entity.PlayerReinforcement.SecurityLevel;
 import com.untamedears.citadel.entity.ReinforcementKey;
 import com.untamedears.citadel.entity.ReinforcementMaterial;
+import com.untamedears.citadel.manager.PlayerManager;
 import com.untamedears.citadel.manager.ReinforcementManager;
 
-/**
- * Created by IntelliJ IDEA. User: chrisrico Date: 3/23/12 Time: 3:37 PM
- */
 public class Utility {
 
 	private static Map<SecurityLevel, MaterialData> securityMaterial;
 	private static Random rng = new Random();
-
-	static {
-		securityMaterial = new HashMap<SecurityLevel, MaterialData>();
-		securityMaterial.put(SecurityLevel.PUBLIC, new Wool(DyeColor.GREEN));
-		securityMaterial.put(SecurityLevel.GROUP, new Wool(DyeColor.YELLOW));
-		securityMaterial.put(SecurityLevel.PRIVATE, new Wool(DyeColor.RED));
-	}
 
 	public static Block getAttachedChest(Block block) {
 		if (block.getType() == Material.CHEST)
@@ -74,102 +65,76 @@ public class Utility {
 		return nr;
 	}
 
-	public static IReinforcement createPlayerReinforcement(Player player,
-			Block block) {
+	public static IReinforcement createPlayerReinforcement(Player player, ReinforcementMaterial reinforcementMaterial, Block block) {
+		ReinforcementManager reinforcementManager = Citadel.getReinforcementManager();
+		PlayerManager playerManager = Citadel.getPlayerManager();
+		
 		int blockTypeId = block.getTypeId();
-		if (PlayerReinforcement.NON_REINFORCEABLE.contains(blockTypeId))
-			return null;
-
-		CivPlayer state = CivPlayer.get(player);
-		Faction group = state.getFaction();
-		if (group != null && group.isDisciplined()) {
-			sendMessage(player, ChatColor.RED, Faction.kDisciplineMsg);
+		if (reinforcementManager.getNonReinforceable().contains(blockTypeId)) {
 			return null;
 		}
-		ReinforcementMaterial material;
-		switch (state.getMode()) {
-		case REINFORCEMENT:
-		case REINFORCEMENT_SINGLE_BLOCK:
-			Material inHand = player.getItemInHand().getType();
-			ReinforcementManager rm = Citadel.getReinforcementManager();
-			material = rm.getReinforcementMaterial(inHand);
-			if (material == null) {
-				sendMessage(
-						player,
-						ChatColor.RED,
-						"Material in hand %s is not a valid reinforcement material.",
-						inHand.name());
-				state.reset();
+
+		CivPlayer civPlayer = playerManager.getCivPlayer(player);
+		Group group = civPlayer.getGroup();
+		GroupStatus status = group.getStatus();
+		if (group != null && status == GroupStatus.DISCIPLINED) {
+			sendMessage(player, ChatColor.RED, "Group under discipline");
+			return null;
+		}
+		
+		String materialName = reinforcementMaterial.getMaterial().name();
+		if (!reinforcementManager.getReinforcementMaterials().containsKey(materialName)) {
+			sendMessage(
+					player,
+					ChatColor.RED,
+					"Material in hand %s is not a valid reinforcement material.",
+					materialName);
+			civPlayer.reset();
+			return null;
+		}
+
+		Material material = reinforcementMaterial.getMaterial();
+		int requirements = reinforcementMaterial.getRequirements();
+		if (!player.getInventory().contains(material, requirements)) {
+			return null;
+		}
+
+		// workaround fix for 1.4.6, it doesnt remove the placed item if its
+		// already removed for some reason?
+		ItemStack requiredMaterials = reinforcementMaterial.getRequiredMaterials();
+		Mode mode = civPlayer.getMode();
+		if (mode == Mode.FORTIFICATION && blockTypeId == material.getId()) {
+			ItemStack stack = player.getItemInHand();
+			if (stack.getAmount() < requirements + 1) {
+				sendMessage(player, ChatColor.RED,
+						"Not enough material in hand to place and fortify this block");
 				return null;
 			}
-			break;
-		case FORTIFICATION:
-			material = state.getReinforcementMaterial();
-			break;
-		default:
-			return null;
-		}
-
-		if (player.getInventory().contains(material.getMaterial(),
-				material.getRequirements())) {
-			if (group == null) {
-				try {
-					group = Citadel.getMemberManager()
-							.getMember(player.getName()).getPersonalGroup();
-					if (group.isDisciplined()) {
-						sendMessage(player, ChatColor.RED,
-								Faction.kDisciplineMsg);
-						return null;
-					}
-				} catch (NullPointerException e) {
-					sendMessage(player, ChatColor.RED,
-							"You don't seem to have a personal group. Try logging out and back in first");
-				}
-			}
-
-			// workaround fix for 1.4.6, it doesnt remove the placed item if its
-			// already removed for some reason?
-			if ((state.getMode() == PlacementMode.FORTIFICATION)
-					&& (blockTypeId == material.getMaterialId())) {
-				ItemStack stack = player.getItemInHand();
-				if (stack.getAmount() < material.getRequirements() + 1) {
-					sendMessage(player, ChatColor.RED,
-							"Not enough material in hand to place and fortify this block");
-					return null;
-				}
-				stack.setAmount(stack.getAmount()
-						- (material.getRequirements() + 1));
-				player.setItemInHand(stack);
-			} else {
-				player.getInventory().removeItem(
-						material.getRequiredMaterials());
-			}
-			// TODO: there will eventually be a better way to flush inventory
-			// changes to the client
-			player.updateInventory();
-			PlayerReinforcement reinforcement = new PlayerReinforcement(block,
-					material, group, state.getSecurityLevel());
-			reinforcement = (PlayerReinforcement) Citadel
-					.getReinforcementManager().addReinforcement(reinforcement);
-			String securityLevelText = state.getSecurityLevel().name();
-			if (securityLevelText.equalsIgnoreCase("group")) {
-				securityLevelText = securityLevelText + "-" + group.getName();
-			}
-			sendThrottledMessage(player, ChatColor.GREEN,
-					"Reinforced with %s at security level %s", material
-							.getMaterial().name(), securityLevelText);
-			Citadel.warning(String.format("PlRein:%s:%d@%s,%d,%d,%d", player
-					.getName(), material.getMaterialId(), block.getWorld()
-					.getName(), block.getX(), block.getY(), block.getZ()));
-			// TODO: enable chained flashers, they're pretty cool
-			// new BlockFlasher(block,
-			// material.getFlasher()).start(getPlugin());
-			// new BlockFlasher(block,
-			// material.getFlasher()).chain(securityMaterial.get(state.getSecurityLevel())).start();
-			return reinforcement;
+			stack.setAmount(stack.getAmount()
+					- (requirements + 1));
+			player.setItemInHand(stack);
 		} else {
-			return null;
+			player.getInventory().removeItem(requiredMaterials);
 		}
+		
+		// TODO: there will eventually be a better way to flush inventory
+		// changes to the client
+		player.updateInventory();
+		PlayerReinforcement reinforcement = (PlayerReinforcement) reinforcementManager.createPlayerReinforcement(block, reinforcementMaterial, civPlayer);
+		
+		String securityLevelName = civPlayer.getSecurityLevel().name();
+		if (securityLevelName.equalsIgnoreCase("group")) {
+			securityLevelName = securityLevelName + "-" + group.getName();
+		}
+		
+		sendThrottledMessage(player, ChatColor.GREEN,
+				"Reinforced with %s at security level %s", materialName, securityLevelName);
+		
+		Citadel.warning(String.format("PlRein:%s:%d@%s,%d,%d,%d", player
+				.getName(), material.getId(), block.getWorld()
+				.getName(), block.getX(), block.getY(), block.getZ()));
+		
+		return reinforcement;
 	}
 
 	public static void sendMessage(CommandSender sender, ChatColor color,
@@ -180,12 +145,13 @@ public class Utility {
 	public static void sendThrottledMessage(CommandSender sender,
 			ChatColor color, String messageFormat, Object... params) {
 		if (sender instanceof Player) {
+			PlayerManager playerManager = Citadel.getPlayerManager();
 			Player player = (Player) sender;
-			CivPlayer state = CivPlayer.get(player);
-			if (System.currentTimeMillis() - state.getLastThrottledMessage() > (1000 * 30)) {
+			CivPlayer civPlayer = playerManager.getCivPlayer(player);
+			if (System.currentTimeMillis() - civPlayer.getLastThrottledMessage() > (1000 * 30)) {
 				sendMessage(player, color, messageFormat, params);
 			}
-			state.setLastThrottledMessage(System.currentTimeMillis());
+			civPlayer.setLastThrottledMessage(System.currentTimeMillis());
 		}
 	}
 
@@ -230,36 +196,49 @@ public class Utility {
 
 	public static boolean isAuthorizedPlayerNear(
 			PlayerReinforcement reinforcement, double distance) {
-		ReinforcementKey key = reinforcement.getId();
+		
+		Integer x = reinforcement.getX();
+		Integer y = reinforcement.getY();
+		Integer z = reinforcement.getZ();
+		String world = reinforcement.getWorld();
+		
 		World reinWorld = Citadel.getPlugin().getServer()
-				.getWorld(key.getWorld());
-		Location reinLocation = new Location(reinWorld, (double) key.getX(),
-				(double) key.getY(), (double) key.getZ());
-		double min_x = reinLocation.getX() - distance;
-		double min_z = reinLocation.getZ() - distance;
-		double max_x = reinLocation.getX() + distance;
-		double max_z = reinLocation.getZ() + distance;
+				.getWorld(world);
+		
+		Location reinLocation = new Location(reinWorld, (double) x,
+				(double) y, (double) z);
+		
+		double minX = reinLocation.getX() - distance;
+		double minZ = reinLocation.getZ() - distance;
+		double maxX = reinLocation.getX() + distance;
+		double maxZ = reinLocation.getZ() + distance;
+		
 		List<Player> onlinePlayers = reinWorld.getPlayers();
+		
 		boolean result = false;
 		try {
 			for (Player player : onlinePlayers) {
 				if (player.isDead()) {
 					continue;
 				}
+				
 				Location playerLocation = player.getLocation();
-				double player_x = playerLocation.getX();
-				double player_z = playerLocation.getZ();
+				double playerX = playerLocation.getX();
+				double playerZ = playerLocation.getZ();
+				
 				// Simple bounding box check to quickly rule out Players
 				// before doing the more expensive playerLocation.distance
-				if (player_x < min_x || player_x > max_x || player_z < min_z
-						|| player_z > max_z) {
+				if (playerX < minX || playerX > maxX || playerZ < minZ
+						|| playerZ > maxZ) {
 					continue;
 				}
+				
 				if (!reinforcement.isAccessible(player)
 						&& !player
 								.hasPermission("citadel.admin.accesssecurable")) {
 					continue;
 				}
+				
 				double distanceSquared = playerLocation.distance(reinLocation);
 				if (distanceSquared <= distance) {
 					result = true;
@@ -337,13 +316,13 @@ public class Utility {
 
 		Mode currentMode = civPlayer.getMode();
 		SecurityLevel currentSecurityLevel = civPlayer
-				.getSelectedSecurityLevel();
+				.getSecurityLevel();
 		if (currentMode == mode && currentSecurityLevel == securityLevel) {
 			civPlayer.reset();
 			sendMessage(player, ChatColor.GREEN, "%s mode off", mode.name());
 		} else {
 			civPlayer.setMode(mode);
-			civPlayer.setSelectedSecurityLevel(securityLevel);
+			civPlayer.setSecurityLevel(securityLevel);
 			switch (mode) {
 			case REINFORCEMENT_SINGLE_BLOCK:
 				sendMessage(player, ChatColor.GREEN, "%s mode %s", mode.name(),
