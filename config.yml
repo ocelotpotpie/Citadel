@@ -50,7 +50,7 @@ naturalReinforcements:
 database:
   driver: com.mysql.jdbc.Driver
   url: jdbc:mysql://localhost:3306/bukkit
-  username: bukkit
+  username: root
   password: ''
   isolation: SERIALIZABLE
   logging: false

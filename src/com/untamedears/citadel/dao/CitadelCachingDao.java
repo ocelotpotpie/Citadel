@@ -1,23 +1,19 @@
 package com.untamedears.citadel.dao;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.PriorityQueue;
-import java.util.Set;
 import java.util.TreeSet;
-
-import com.avaje.ebean.EbeanServer;
 
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.avaje.ebean.EbeanServer;
 import com.untamedears.citadel.Citadel;
 import com.untamedears.citadel.DbUpdateAction;
-import com.untamedears.citadel.SecurityLevel;
 import com.untamedears.citadel.entity.IReinforcement;
 import com.untamedears.citadel.entity.NaturalReinforcement;
 import com.untamedears.citadel.entity.PlayerReinforcement;

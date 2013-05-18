@@ -7,27 +7,31 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.untamedears.citadel.command.PlayerCommand;
-import com.untamedears.citadel.entity.PlayerState;
+import com.untamedears.citadel.entity.CivPlayer;
+import com.untamedears.citadel.entity.CivPlayer.Mode;
 
-/**
- * Created by IntelliJ IDEA.
- * User: chrisrico
- * Date: 3/21/12
- * Time: 11:08 AM
- * 
- * Last modified by JonnyD
- * 7/18/12
- */
 public class BypassCommand extends PlayerCommand {
+	
     public BypassCommand() {
         super("Bypass Mode");
         setDescription("Toggles bypass mode");
         setUsage("/ctbypass");
+        setArgumentRange(0,0);
 		setIdentifiers(new String[] {"ctbypass", "ctb"});
     }
 
 	public boolean execute(CommandSender sender, String[] args) {
-		String status = PlayerState.get((Player)sender).toggleBypassMode() ? "enabled" : "disabled";
+		Player player = (Player) sender;
+		CivPlayer civPlayer = playerManager.getCivPlayer(player);
+		Mode mode = civPlayer.getMode();
+		Mode newMode;
+		if(mode != Mode.BYPASS) {
+			newMode = Mode.BYPASS;
+		} else {
+			newMode = Mode.NORMAL;
+		}
+		civPlayer.setMode(newMode);
+		String status = newMode == Mode.BYPASS ? "enabled" : "disabled";
         sendMessage(sender, ChatColor.GREEN, "Bypass mode %s", status);
         return true;
 	}

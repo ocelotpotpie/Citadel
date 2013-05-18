@@ -5,15 +5,10 @@ import static com.untamedears.citadel.Utility.setSingleMode;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import com.untamedears.citadel.SecurityLevel;
 import com.untamedears.citadel.command.PlayerCommand;
-import com.untamedears.citadel.entity.PlayerState;
+import com.untamedears.citadel.entity.CivPlayer;
+import com.untamedears.citadel.entity.PlayerReinforcement.SecurityLevel;
 
-/**
- * User: JonnyD
- * Date: 7/18/12
- * Time: 11:57 PM
- */
 public class PublicCommand extends PlayerCommand {
 
 	public PublicCommand() {
@@ -25,8 +20,8 @@ public class PublicCommand extends PlayerCommand {
 
 	public boolean execute(CommandSender sender, String[] args) {
 		Player player = (Player) sender;
-		PlayerState state = PlayerState.get(player);
-		setSingleMode(SecurityLevel.PUBLIC, state, player);
+		CivPlayer civPlayer = playerManager.getCivPlayer(player);
+		setSingleMode(SecurityLevel.PUBLIC, civPlayer);
 		return true;
 	}
 

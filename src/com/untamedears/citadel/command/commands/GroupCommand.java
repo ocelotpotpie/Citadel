@@ -2,16 +2,18 @@ package com.untamedears.citadel.command.commands;
 
 import static com.untamedears.citadel.Utility.sendMessage;
 import static com.untamedears.citadel.Utility.setSingleMode;
+import groups.model.Group;
+import groups.model.GroupMember;
+import groups.model.Group.GroupStatus;
+import groups.model.GroupMember.Role;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.SecurityLevel;
 import com.untamedears.citadel.command.PlayerCommand;
-import com.untamedears.citadel.entity.Faction;
-import com.untamedears.citadel.entity.PlayerState;
+import com.untamedears.citadel.entity.CivPlayer;
+import com.untamedears.citadel.entity.PlayerReinforcement.SecurityLevel;
 
 /**
  * User: JonnyD & chrisrico
@@ -30,28 +32,40 @@ public class GroupCommand extends PlayerCommand {
 
 	public boolean execute(CommandSender sender, String[] args) {
 		String groupName = args[0];
-		Faction group = Citadel.getGroupManager().getGroup(groupName);
+		Group group = groupMediator.getGroupByName(groupName);
+		
 		if(group == null){
 			sendMessage(sender, ChatColor.RED, "Group doesn't exist");
 			return true;
 		}
-		if (group.isDisciplined()) {
-			sendMessage(sender, ChatColor.RED, Faction.kDisciplineMsg);
+		
+		GroupStatus status = group.getStatus();
+		if (status == GroupStatus.DISCIPLINED) {
+			sendMessage(sender, ChatColor.RED, "Group under discipline");
 			return true;
 		}
+		
 		String senderName = sender.getName();
-		if(!group.isFounder(senderName) && !group.isModerator(senderName)){
-			sendMessage(sender, ChatColor.RED, "Invalid permission to use this group");
+		GroupMember groupMember = group.getGroupMember(senderName);
+		Role role = groupMember.getRole();
+
+		boolean hasPermission = (role == Role.ADMIN || role == role.MODERATOR);
+		if (!hasPermission) {
+			sendMessage(sender, ChatColor.RED,
+					"Invalid permission to use this group");
 			return true;
 		}
-		if(group.isPersonalGroup()){
+		
+		if(group.isPersonal()){
 			sendMessage(sender, ChatColor.RED, "You cannot share your default group");
 			return true;
 		}
+		
 		Player player = (Player) sender;
-		PlayerState state = PlayerState.get(player);
-		state.setFaction(group);
-		setSingleMode(SecurityLevel.GROUP, state, player);
+		CivPlayer civPlayer = playerManager.getCivPlayer(player);
+		civPlayer.setGroup(group);
+		
+		setSingleMode(SecurityLevel.GROUP, civPlayer);
 		return true;		
 	}
 

@@ -4,23 +4,26 @@ import static com.untamedears.citadel.Utility.getSecurityLevel;
 import static com.untamedears.citadel.Utility.sendMessage;
 import static com.untamedears.citadel.Utility.setMultiMode;
 
+import java.util.Map;
+
+import groups.model.Group;
+import groups.model.GroupMember;
+import groups.model.Member;
+import groups.model.Group.GroupStatus;
+import groups.model.GroupMember.Role;
+
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.untamedears.citadel.Citadel;
-import com.untamedears.citadel.PlacementMode;
-import com.untamedears.citadel.SecurityLevel;
 import com.untamedears.citadel.command.PlayerCommand;
-import com.untamedears.citadel.entity.Faction;
-import com.untamedears.citadel.entity.PlayerState;
-import com.untamedears.citadel.manager.GroupManager;
+import com.untamedears.citadel.entity.CivPlayer;
+import com.untamedears.citadel.entity.CivPlayer.Mode;
+import com.untamedears.citadel.entity.ReinforcementMaterial;
+import com.untamedears.citadel.entity.PlayerReinforcement.SecurityLevel;
 
-/**
- * User: JonnyD
- * Date: 7/18/12
- * Time: 11:57 PM
- */
 public class ReinforceCommand extends PlayerCommand {
 
 	public ReinforceCommand() {
@@ -33,50 +36,91 @@ public class ReinforceCommand extends PlayerCommand {
 
 	public boolean execute(CommandSender sender, String[] args) {
 		Player player = (Player) sender;
-		PlayerState state = PlayerState.get(player);
+		CivPlayer civPlayer = playerManager.getCivPlayer(player);
+		String username = civPlayer.getUsername();
 		
-		String secLevel = null;
+		String securityLevelName = null;
 		String groupName = null;
 		if(args.length != 0){
-			secLevel = args[0];
+			securityLevelName = args[0];
 			if(args.length == 2){
 				groupName = args[1];
 			}
 		}
-		if(secLevel != null && secLevel.equalsIgnoreCase("group")){
-			if(groupName == null || groupName.isEmpty() || groupName.equals("")){
-				sender.sendMessage(new StringBuilder().append("Â§cYou must specify a group in group reinforce mode").toString());
-				sender.sendMessage(new StringBuilder().append("Â§cUsage:Â§e ").append("/ctreinforce Â§8group <group-name>").toString());
+		
+		SecurityLevel securityLevel;
+		if (securityLevelName != null) {
+			securityLevel = SecurityLevel.valueOf(securityLevelName.toUpperCase());
+		} else {
+			securityLevel = SecurityLevel.PRIVATE;
+		}
+		
+		if(securityLevel == SecurityLevel.GROUP) {
+			Group group;
+			if (groupName != null) {
+				group = groupMediator.getGroupByName(groupName);
+			} else {
+				sender.sendMessage(new StringBuilder()
+						.append("§cYou must specify a group in group fortification mode")
+						.toString());
+				sender.sendMessage(new StringBuilder().append("§cUsage:§e ")
+						.append("/ctfortify §8group <group-name>").toString());
 				return true;
 			}
-			GroupManager groupManager = Citadel.getGroupManager();
-			Faction group = groupManager.getGroup(groupName);
-			if(group == null){
+
+			if (group == null) {
 				sendMessage(sender, ChatColor.RED, "Group doesn't exist");
 				return true;
 			}
-			if (group.isDisciplined()) {
-				sendMessage(sender, ChatColor.RED, Faction.kDisciplineMsg);
+
+			GroupStatus status = group.getStatus();
+			if (status == GroupStatus.DISCIPLINED) {
+				sendMessage(sender, ChatColor.RED, "Group under discipline");
 				return true;
 			}
+
 			String senderName = sender.getName();
-			if(!group.isFounder(senderName) && !group.isModerator(senderName)){
-				sendMessage(sender, ChatColor.RED, "Invalid permission to use this group");
+			GroupMember groupMember = group.getGroupMember(senderName);
+			Role role = groupMember.getRole();
+
+			boolean hasPermission = (role == Role.ADMIN || role == role.MODERATOR);
+			if (!hasPermission) {
+				sendMessage(sender, ChatColor.RED,
+						"Invalid permission to use this group");
 				return true;
 			}
-			if(group.isPersonalGroup()){
-				sendMessage(sender, ChatColor.RED, "You cannot share your default group");
+
+			if (group.isPersonal()) {
+				sendMessage(sender, ChatColor.RED,
+						"You cannot share your default group");
 				return true;
 			}
-			state.setFaction(group);
+
+			civPlayer.setGroup(group);
 		} else {
-			state.setFaction(Citadel.getMemberManager().getMember(player).getPersonalGroup());
+			Member member = groupMediator.getMemberByUsername(username);
+			Group personalGroup = member.getPersonalGroup();
+			civPlayer.setGroup(personalGroup);
 		}
 		
-		SecurityLevel securityLevel = getSecurityLevel(args, player);
-        if (securityLevel == null) return false;
+		Material itemInHand = player.getItemInHand().getType();
+		String itemInHandName = itemInHand.name();
+
+		Map<String, ReinforcementMaterial> reinforcementMaterials = configManager
+				.getReinforcementMaterials();
+		ReinforcementMaterial reinforcementMaterial = reinforcementMaterials
+				.get(itemInHandName);
+
+		if (reinforcementMaterial != null) {
+			civPlayer.setFortificationMaterial(reinforcementMaterial);
+			civPlayer.reset();
+		} else {
+			sendMessage(sender, ChatColor.YELLOW,
+					"Invalid reinforcement material %s", itemInHandName);
+			return true;
+		}
         
-        setMultiMode(PlacementMode.REINFORCEMENT, securityLevel, args, player, state);
+        setMultiMode(Mode.REINFORCEMENT, securityLevel, civPlayer);
         return true;
 	}
 

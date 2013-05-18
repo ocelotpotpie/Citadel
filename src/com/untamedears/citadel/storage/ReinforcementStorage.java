@@ -8,11 +8,6 @@ import org.bukkit.block.Block;
 import com.untamedears.citadel.dao.CitadelDao;
 import com.untamedears.citadel.entity.IReinforcement;
 
-/**
- * User: JonnyD
- * Date: 07/18/12
- * Time: 11:57 PM
- */
 public class ReinforcementStorage {
 
 	private CitadelDao dao;
@@ -39,10 +34,6 @@ public class ReinforcementStorage {
 	
 	public Set<IReinforcement> findReinforcementsByGroup(String groupName){
 		return this.dao.findReinforcementsByGroup(groupName);
-	}
-	
-	public void moveReinforcements(String from, String target){
-		this.dao.moveReinforcements(from, target);
 	}
 	
 	public int findReinforcementsAmount(){
