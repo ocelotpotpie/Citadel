@@ -5,16 +5,13 @@ import groups.model.Group.GroupStatus;
 
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 import org.bukkit.ChatColor;
-import org.bukkit.DyeColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -22,16 +19,14 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
-import org.bukkit.material.Wool;
 
 import com.untamedears.citadel.access.AccessDelegate;
-import com.untamedears.citadel.entity.CivPlayer.Mode;
 import com.untamedears.citadel.entity.CivPlayer;
+import com.untamedears.citadel.entity.CivPlayer.Mode;
 import com.untamedears.citadel.entity.IReinforcement;
 import com.untamedears.citadel.entity.NaturalReinforcement;
 import com.untamedears.citadel.entity.PlayerReinforcement;
 import com.untamedears.citadel.entity.PlayerReinforcement.SecurityLevel;
-import com.untamedears.citadel.entity.ReinforcementKey;
 import com.untamedears.citadel.entity.ReinforcementMaterial;
 import com.untamedears.citadel.manager.PlayerManager;
 import com.untamedears.citadel.manager.ReinforcementManager;
