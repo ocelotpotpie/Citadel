@@ -3,6 +3,8 @@ package com.untamedears.citadel.command.commands;
 import static com.untamedears.citadel.Utility.getTruncatedMaterialMessage;
 import static com.untamedears.citadel.Utility.sendMessage;
 
+import java.util.List;
+
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
@@ -24,10 +26,11 @@ public class SecurableCommand extends PlayerCommand {
 	}
 
 	public boolean execute(CommandSender sender, String[] args) {
-		if (PlayerReinforcement.SECURABLE.isEmpty()) {
+		List<Integer> securable = configManager.getSecurable();
+		if (securable.isEmpty()) {
             sendMessage(sender, ChatColor.YELLOW, "No other blocks are securable.");
         } else {
-            sendMessage(sender, ChatColor.GREEN, getTruncatedMaterialMessage("Securable blocks: ", PlayerReinforcement.SECURABLE));
+            sendMessage(sender, ChatColor.GREEN, getTruncatedMaterialMessage("Securable blocks: ", securable));
         }
 		return true;
 	}
