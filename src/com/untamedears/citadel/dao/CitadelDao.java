@@ -295,11 +295,80 @@ public class CitadelDao extends MyDatabase {
 				.setParameter("groupName", groupName);
 		getDatabase().execute(update);
 	}
+	
 
-    public Set<FactionDelete> loadFactionDeletions() {
-        return getDatabase()
-            .createQuery(FactionDelete.class, "find faction_delete")
-            .findSet();
+	public Set<FactionDelete> loadFactionDeletions() {
+		return getDatabase()
+				.createQuery(FactionDelete.class, "find faction_delete")
+				.findSet();
+	}
+ 
+    
+    /**
+     * @author GFQ
+     * @date 4/25/2014
+     *
+     * @brief Performs batch reinforcement updates for deleted factions
+     * 
+     * When a faction is deleted, there could potentially be millions of reinforcement records
+     * that would need to be updated with a new group name. This is handled by adding it 
+     * to a separate faction_delete table, and setting the delete flag for that faction. 
+     * This batch method is then run on plugin startup.
+     * 
+     * This function gets a set of all factions that are marked as deleted and performs
+     * a series of reinforcement update queries. If the group no longer has any existing
+     * reinforcement records then the group is deleted. If the total batch time exceeds
+     * the given time limit then the loop exits and more work will be done on the next
+     * restart. 
+     */
+    public void batchRemoveDeletedGroups() {
+
+    	final int BATCH_UPDATE_SIZE = Citadel.getConfigManager().getBatchUpdateSize();
+    	final int BATCH_TIMEOUT_MS = Citadel.getConfigManager().getBatchUpdateTimeoutMs();
+    	
+    	// Mark the start time
+    	long startTime = System.currentTimeMillis();    	
+    	
+    	// Get all the groups that are in the faction_delete table and marked as delete in the main faction able
+    	String joinQuery = String.format("select * from faction_delete left join (faction) "
+    			+ "on (faction.name = faction_delete.deleted_faction and faction.discipline_flags & %d = %d)", Faction.kDeletedFlag, Faction.kDeletedFlag);
+    	Set<SqlRow> groups = getDatabase().createSqlQuery(joinQuery).findSet();
+    	
+    	for (SqlRow groupRow : groups) {
+    		String groupName = groupRow.getString("deleted_faction");
+    		String personalGroup = groupRow.getString("personal_group");
+    		int recordsLeft = 1;
+    		
+    		// Do batch deletes in groups of BATCH_UPDATE_SIZE while there are records remaining and we're inside our time limit
+    		while (recordsLeft > 0 && System.currentTimeMillis() - startTime <= BATCH_TIMEOUT_MS) {
+	    		// Get how many records still need to be updated from the deleted group name to the private group name    			
+    	    	SqlRow row = getDatabase().createSqlQuery("select count(*) as count from reinforcement where name = :name")
+    	    			.setParameter("name", groupName)
+    	    			.findUnique();
+    	    	recordsLeft = row.getInteger("count"); 
+	        	
+    	    	getDatabase().beginTransaction();
+	        	
+	        	if (recordsLeft > 0) {
+	        		getDatabase().createSqlUpdate("update reinforcement set name = :newName where name = :oldName limit :limit")
+	        		.setParameter("newName", personalGroup)
+	        		.setParameter("oldName", groupName)
+	        		.setParameter("limit", BATCH_UPDATE_SIZE)
+	        		.execute();
+	        	} else {
+	        		// No more records to update, now we can safely delete the group
+	        		getDatabase().createSqlUpdate("delete from faction_delete where deleted_faction = :name")
+        				.setParameter("name",groupName)
+        				.execute();
+	        		
+	        		getDatabase().createSqlUpdate("delete from faction where name = :name")
+	        			.setParameter("name", groupName)
+	        			.execute();
+	        	}
+	        	
+	        	getDatabase().commitTransaction();
+    		}
+    	}
     }
 
     public void updateDatabase() {
